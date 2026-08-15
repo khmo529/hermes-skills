@@ -6,7 +6,7 @@
 - 경험 기반 표현 4회 이상 자연 포함
 - 추상적 조언 금지. 구체 수치/날짜/장소/금액 필수
 - 금지 문구 사용 금지: "첫째, 둘째, 결론적으로", "~인 것이죠", "~셈입니다", "~알아보겠습니다", "말씀드리겠습니다", "~라고 할 수 있습니다", "생각해볼 필요가 있습니다", "대박, 무조건, 필수, 100%"
-- 허용 태그만 사용: h2, h3, p, strong, em, ul, ol, li, table, thead, tbody, tr, th, td, a, hr, br, blockquote
+- 허용 태그만 사용: h2, h3, p, strong, em, ul, ol, li, table, thead, tbody, tr, th, td, a, hr, br, blockquote, div
 - 금지: markdown 코드블록, JSON, wp: 블록 주석, class, style, colspan, rowspan
 - 결과물은 워드프레스 Custom HTML 블록 하나에 통째로 붙여넣는 것을 전제
 </rules>
@@ -32,15 +32,45 @@
 10. 즉시 실행 행동 1가지
 11. 댓글 유도 질문 2개
 12. 다음 글 추천 2개 (<a href="/tag/키워드">)
-13. 최하단 고지 문구
+13. E-E-A-T 작성자 박스
+14. 최하단 고지 문구
 </required_sections>
+
+<legal_rule>
+- "제○○조" 플레이스홀더 절대 금지
+- 실제 조문 사용: "소득세법 제16조의2", "지방세법 제○○조"
+- 출처 링크 필수: 국세청(www.nts.go.kr), 기획재정부(www.moef.go.kr), 법제처(www.law.go.kr)
+- 금액은 절대 "약 N만원" 금지. 반드시 "2026년 8월 기준 2,200만원" 형태
+</legal_rule>
+
+<action_rule>
+- "확인하세요, 준비하세요, 중요해요" 금지
+- 대체: "홈택스 > 조회/발급 > 기타조회 > 가상자산 모의계산 클릭"
+- 버튼/메뉴 단위까지 구체적으로
+</action_rule>
+
+<author_box>
+<div class="author-box">
+<p><strong>작성:</strong> MoneyBull 에디터 | CFP/공인중개사 협업</p>
+<p><strong>감수:</strong> 세무사 ○○○</p>
+<p><strong>최종업데이트:</strong> {{BASE_DATE}}</p>
+<p><strong>출처:</strong> 국세청(www.nts.go.kr), 기획재정부(www.moef.go.kr), 법제처(www.law.go.kr)</p>
+</div>
+</author_box>
 
 <image_rule>
 - 본문 중간에 [이미지 1] ~ [이미지 4] 배치
-- ALT는 "무엇을 하는 장면인지 + 장소/금액 + 목적" 포함
-- 예: alt="홈택스에서 코인 세금 신고 절차 확인하는 화면, 3,000만원 수익 기준"
-- 이미지는 placeholder만 생성. 실제 삽입은 나중에.
+- 구체적 파일명 + ALT 필수
+- 예: <img src="upbit-trade-history.png" alt="업비트 거래내역 엑셀 다운로드 버튼 위치, 2026년 8월 기준">
+- 이미지는 WordPress 미디어 라이브러리에 업로드 후 URL 삽입 (또는 placeholder라도 구체적 파일명)
 </image_rule>
+
+<adsense_rule>
+본문 중간에 3개 AdSense 슬롯 삽입:
+<!-- AD-SLOT-1: 제목 바로 아래 반응형 -->
+<!-- AD-SLOT-2: Step 1~2 사이 인피드 -->
+<!-- AD-SLOT-3: 체크리스트 위 -->
+</adsense_rule>
 
 <seo_block>
 본문 끝에 <hr>로 구분한 별도 출력:

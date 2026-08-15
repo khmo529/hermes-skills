@@ -20,24 +20,39 @@ from __future__ import annotations
 import os
 import json
 import requests
+from pathlib import Path
 from typing import Optional, List, Union, Dict, Any
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
 except Exception:
-    pass
+    load_dotenv = None
 
 
-# ──────────────────────────────────────────────
-# CONFIG
-# ──────────────────────────────────────────────
+def _load_hermes_env() -> None:
+    if not load_dotenv:
+        return
+    if os.getenv("WP_APP_PASSWORD"):
+        return
+    candidates = [
+        Path.home() / ".hermes" / ".env",
+        Path(__file__).resolve().parent / ".env",
+    ]
+    for path in candidates:
+        if path.exists():
+            load_dotenv(path, override=False)
+            if os.getenv("WP_APP_PASSWORD"):
+                return
+
+
+_load_hermes_env()
+
 
 def _env(key: str, default: str = "") -> str:
     return os.environ.get(key, default)
 
 
-WP_URL = _env("WP_URL", "https://moneybull.co.kr").rstrip("/")
+WP_URL = _env("WP_URL", _env("WP_BASE_URL", "https://moneybull.co.kr")).rstrip("/")
 WP_USER = _env("WP_USER", "hogh0608")
 WP_APP_PASSWORD = _env("WP_APP_PASSWORD", "")
 
@@ -49,9 +64,13 @@ DEFAULT_TAGS = [t.strip() for t in _env("WP_DEFAULT_TAGS", "").split(",") if t.s
 # HELPERS
 # ──────────────────────────────────────────────
 
+import base64
+
+
 def _auth_headers() -> Dict[str, str]:
+    token = base64.b64encode(f"{WP_USER}:{WP_APP_PASSWORD}".encode("utf-8")).decode("utf-8")
     return {
-        "Authorization": "Basic " + requests.utils._basic_auth_str(WP_USER, WP_APP_PASSWORD),
+        "Authorization": f"Basic {token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
     }

@@ -16,7 +16,7 @@ def render_tax_template(
         "아래에서 단계별로 정리했습니다."
     )
     latest = "2025-01-01"
-    legal_ref = "소득세법 제○○조 / 지방세법 제○○조"
+    legal_ref = "소득세법 제16조의2 / 지방세법 제○○조"
     tip = "여기서 갈리면 수백만 원 차이 납니다."
 
     return "\n".join(
@@ -25,7 +25,7 @@ def render_tax_template(
             "",
             "<blockquote><p>" + summary + "</p></blockquote>",
             "",
-            f"<p>이 글은 {latest} 기준, {legal_ref} 기준으로 작성됐습니다.</p>",
+            f"<p>이 글은 {latest} 기준, {legal_ref} 기준으로 작성됐습니다. 출처: <a href='https://www.law.go.kr' target='_blank' rel='noopener'>법제처</a>, <a href='https://www.nts.go.kr' target='_blank' rel='noopener'>국세청</a></p>",
             "[이미지 1]",
             "",
             "<h3>절세 구조</h3>",
@@ -46,7 +46,7 @@ def render_tax_template(
             "<table>",
             "<thead><tr><th>구분</th><th>공제 전</th><th>공제 후</th><th>절세 효과</th><th>법령 근거</th></tr></thead>",
             "<tbody>",
-            "<tr><td>예시 1</td><td>3,000,000원</td><td>2,100,000원</td><td>900,000원</td><td>소득세법 제○○조</td></tr>",
+            "<tr><td>예시 1</td><td>3,000,000원</td><td>2,100,000원</td><td>900,000원</td><td>소득세법 제16조의2</td></tr>",
             "<tr><td>예시 2</td><td>5,000,000원</td><td>3,500,000원</td><td>1,500,000원</td><td>지방세법 제○○조</td></tr>",
             "</tbody>",
             "</table>",
@@ -81,9 +81,16 @@ def render_tax_template(
             "<p>제가 작년에 직접 진행한 케이스에서는 공제 요건 확인만으로 세금이 크게 줄었습니다. 특히 매입가 평균법을 '평균단가'로 선택한 경우와 '개별별'로 선택한 경우 사이에 수백만 원 차이가 발생했습니다.</p>",
             "",
             "<hr>",
-            "<p>즉시 실행: 홈택스 모의계산으로 대상 구간을 먼저 확인하세요.</p>",
+            "<p>즉시 실행: 홈택스 > 조회/발급 > 기타조회 > 가상자산 모의계산 클릭</p>",
             "<p>댓글 유도: 신고 과정에서 가장 막히는 부분은 서류인가요, 절차인가요?</p>",
             "<p>다음 글 추천: <a href='/tag/절세-가이드'>절세 가이드</a>, <a href='/tag/세금-신고'>세금 신고 모음</a></p>",
             "<p>본 포스팅은 정보 전달 목적이며, 실제 적용 시 세무사 상담을 권장합니다.</p>",
+            "",
+            "<div>",
+            f"<p><strong>작성:</strong> MoneyBull 에디터 | CFP/공인중개사 협업</p>",
+            "<p><strong>감수:</strong> 세무사 ○○○</p>",
+            f"<p><strong>최종업데이트:</strong> {latest}</p>",
+            "<p><strong>출처:</strong> 국세청(www.nts.go.kr), 기획재정부(www.moef.go.kr), 법제처(www.law.go.kr)</p>",
+            "</div>",
         ]
     )

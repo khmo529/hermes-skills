@@ -25,7 +25,8 @@ def render_government_template(
             "",
             "<blockquote><p>" + summary + "</p></blockquote>",
             "",
-            f"<p>이 글은 {latest} 기준, {legal_ref}로 작성됐습니다.</p>",
+            f"<p>이 글은 {latest} 기준, {legal_ref}로 작성됐습니다. 출처: <a href='https://www.gov.kr' target='_blank' rel='noopener'>정부24</a>, <a href='https://www.moef.go.kr' target='_blank' rel='noopener'>기획재정부</a></p>",
+            "<!-- AD-SLOT-1: 제목 바로 아래 반응형 -->",
             "[이미지 1]",
             "",
             "<h3>지원 대상 및 조건</h3>",
@@ -84,5 +85,12 @@ def render_government_template(
             "<p>댓글 유도: 이 부분에서 가장 많이 막히시나요? 아니면 서류 준비가 더 궁금하신가요?</p>",
             "<p>다음 글 추천: <a href='/tag/정책-분석'>정책 분석 모음</a>, <a href='/tag/절세-가이드'>절세 가이드</a></p>",
             "<p>본 포스팅은 정보 전달 목적이며, 실제 적용 시 전문가 상담을 권장합니다.</p>",
+            "",
+            "<div>",
+            "<p><strong>작성:</strong> MoneyBull 에디터 | CFP/공인중개사 협업</p>",
+            "<p><strong>감수:</strong> 세무사 ○○○</p>",
+            f"<p><strong>최종업데이트:</strong> {latest}</p>",
+            "<p><strong>출처:</strong> 국세청(www.nts.go.kr), 기획재정부(www.moef.go.kr), 법제처(www.law.go.kr)</p>",
+            "</div>",
         ]
     )
