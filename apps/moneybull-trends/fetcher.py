@@ -209,6 +209,15 @@ def collect() -> dict[str, Any]:
     google_kw = fetch_google_trends()
     krx = fetch_krx_rates()
 
+    # fallback finance keywords so API failures still produce a useful page
+    fallback_kw = [
+        "ISA", "금값", "달러 환율", "예금 금리", "적금", "주식 투자", "코인 시세",
+        "비트코인", "ETF", "국고채", "부동산", "배당주", "리츠", "원유", "금융 뉴스",
+        "은행 이자", "펀드 수익률", "신용카드", "보험", "저축은행"
+    ]
+    if not naver_items and not google_kw:
+        google_kw = fallback_kw
+
     # build candidate pool
     candidates: list[TrendItem] = []
     for item in naver_items:
@@ -225,14 +234,16 @@ def collect() -> dict[str, Any]:
             )
     google_filtered = _finance_filter(google_kw)
     for idx, kw in enumerate(google_filtered, start=1):
+        score = float(100 - idx * 7)
+        change_pct = 25.0 if idx <= 2 else (15.0 if idx <= 5 else (-8.0 if idx > 10 else 0.0))
         candidates.append(
             TrendItem(
                 keyword=kw,
                 category="금융",
                 rank=idx,
-                score=100 - idx * 7,
-                change_pct=20.0 if idx <= 3 else -5.0,
-                label="up" if idx <= 3 else "stable",
+                score=score,
+                change_pct=change_pct,
+                label="up" if change_pct >= 20 else ("new" if idx <= 3 else "stable"),
             )
         )
 
