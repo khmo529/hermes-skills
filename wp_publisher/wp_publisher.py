@@ -61,6 +61,35 @@ WP_APP_PASSWORD = _env("WP_APP_PASSWORD", "")
 DEFAULT_CATEGORY = _env("WP_DEFAULT_CATEGORY", "general")
 DEFAULT_TAGS = [t.strip() for t in _env("WP_DEFAULT_TAGS", "").split(",") if t.strip()]
 
+CATEGORY_MAP = {
+    "finance": 3,
+    "banking": 1,
+    "pension": 1,
+    "tax-saving": 1,
+    "personal-finance": 1,
+    "tax": 1,
+    "stock": 15,
+    "kr-stocks": 3,
+    "us-stocks": 3,
+    "exchange-rate": 1,
+    "interest-rate": 1,
+    "inflation": 1,
+    "economic-indicators": 1,
+    "policy": 5,
+    "korea-policy": 4,
+    "us-policy": 1,
+    "global-policy": 1,
+}
+
+
+def _get_category_id(slug: Optional[str]) -> Optional[int]:
+    if not slug:
+        return None
+    mapped = CATEGORY_MAP.get(str(slug).strip().lower())
+    if mapped:
+        return mapped
+    return _resolve_category(slug)
+
 
 # ──────────────────────────────────────────────
 # ENV BACKUP
@@ -200,7 +229,7 @@ class WPPublisher:
         featured_media: int = 0,
         content_blocks: Optional[List[Dict[str, Any]]] = None,
     ) -> int:
-        cat_id = _resolve_category(category or DEFAULT_CATEGORY)
+        cat_id = _get_category_id(category or DEFAULT_CATEGORY)
         if cat_id is None:
             cat_id = 1
 
@@ -261,7 +290,7 @@ class WPPublisher:
         if status is not None:
             payload["status"] = status
         if category is not None:
-            cat_id = _resolve_category(category)
+            cat_id = _get_category_id(category)
             if cat_id:
                 payload["categories"] = [cat_id]
         if tags is not None:

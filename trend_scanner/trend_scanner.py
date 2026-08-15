@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from trend_scanner.sources import google_trends, gov24, moef, fsc
 from trend_scanner.sources import naver_datalab
+from trend_scanner.evergreen_topics import EVERGREEN_TOPICS
 
 # ──────────────────────────────────────────────
 # CONFIG
@@ -181,10 +182,7 @@ def run_pipeline(top_n: int = 3, output_dir: str | None = None):
 
     from blog_content.blog_content import generate_draft, save_draft
 
-    items = collect_all()
-    filtered = _filter_keywords(items)
-    trends = filtered[: max(1, int(top_n))]
-
+    trends = _pick_evergreen(top_n=max(1, int(top_n)))
     results = []
     for trend in trends:
         keyword = trend.get("keyword") or trend.get("title") or ""
@@ -220,3 +218,32 @@ def run_pipeline(top_n: int = 3, output_dir: str | None = None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# ──────────────────────────────────────────────
+# EVERGREEN TOPICS
+# ──────────────────────────────────────────────
+
+def _load_used_slugs(output_dir: Optional[Path] = None) -> set:
+    used = set()
+    scan_dir = output_dir or (BASE_DIR / "output" / "pipeline")
+    if scan_dir.exists():
+        for path in scan_dir.rglob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    used.add(data.get("slug", ""))
+                elif isinstance(data, list):
+                    for item in data:
+                        used.add(item.get("slug", ""))
+            except Exception:
+                continue
+    return used
+
+
+def _pick_evergreen(top_n: int = 1) -> List[Dict[str, Any]]:
+    used = _load_used_slugs()
+    available = [t for t in EVERGREEN_TOPICS if t.get("slug", "") not in used]
+    if not available:
+        available = list(EVERGREEN_TOPICS)
+    return available[: max(1, int(top_n))]
