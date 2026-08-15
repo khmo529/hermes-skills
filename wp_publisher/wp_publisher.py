@@ -20,7 +20,9 @@ from __future__ import annotations
 import os
 import json
 import requests
+import shutil
 from pathlib import Path
+from datetime import datetime
 from typing import Optional, List, Union, Dict, Any
 
 try:
@@ -58,6 +60,22 @@ WP_APP_PASSWORD = _env("WP_APP_PASSWORD", "")
 
 DEFAULT_CATEGORY = _env("WP_DEFAULT_CATEGORY", "general")
 DEFAULT_TAGS = [t.strip() for t in _env("WP_DEFAULT_TAGS", "").split(",") if t.strip()]
+
+
+# ──────────────────────────────────────────────
+# ENV BACKUP
+# ──────────────────────────────────────────────
+
+def backup_env_before_write() -> None:
+    """어떤 스크립트도 .env를 덮어쓰기 전에 자동 백업"""
+    env_file = Path.home() / ".hermes" / ".env"
+    backup_dir = Path.home() / ".hermes" / ".backup"
+    backup_dir.mkdir(exist_ok=True)
+    if env_file.exists():
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup = backup_dir / f".env.{timestamp}"
+        shutil.copy2(env_file, backup)
+        print(f"✅ .env 백업 완료: {backup}")
 
 
 # ──────────────────────────────────────────────

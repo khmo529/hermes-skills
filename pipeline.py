@@ -2,7 +2,7 @@
 """
 Hermes MoneyBull Pipeline
 trend-scanner -> blog-content -> wp-publisher
-일일 1개 Draft 생성 + Telegram 승인 알림
+일일 1개 Draft 생성 + Discord 승인 알림
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ def run(top_n: int = 1, publish: bool = False) -> int:
         except Exception as exc:
             print(f" - Draft 게시 실패: {draft.get('keyword')} — {exc}")
 
-    _notify_telegram(draft, post_id)
+    _notify_discord(draft, post_id)
 
     print("=== Pipeline 완료 ===")
     return 0
@@ -71,7 +71,6 @@ def _build_wp_payload(draft: Dict[str, Any]) -> Dict[str, Any]:
     title = draft.get("title") or draft.get("keyword", "Untitled")
     content = draft.get("content", "")
     category = draft.get("category") or meta.get("category") or "general"
-    tags = meta.get("tags") or []
     seo_title = meta.get("seo_title") or title
     seo_desc = meta.get("seo_description") or ""
     focus = meta.get("focus_keyword") or draft.get("keyword", "")
@@ -95,18 +94,19 @@ def _build_wp_payload(draft: Dict[str, Any]) -> Dict[str, Any]:
     return payload
 
 
-def _notify_telegram(draft: Dict[str, Any], post_id: Optional[int]) -> None:
+def _notify_discord(draft: Dict[str, Any], post_id: Optional[int]) -> None:
     try:
-        from telegram_bot import TelegramBot  # type: ignore
-        bot = TelegramBot()
-        bot.send_draft_notification(
+        from discord_notifier import DiscordNotifier  # type: ignore
+        notifier = DiscordNotifier()
+        message = notifier.send_draft_notification(
             post_id=post_id or 0,
             title=draft.get("title") or draft.get("keyword", "Untitled"),
             keyword=draft.get("keyword", ""),
         )
-        print("✅ Telegram 알림 전송 완료")
+        print(message)
+        print("✅ Discord 알림 준비 완료")
     except Exception as exc:
-        print(f"ℹ️ Telegram 알림 건너뜀: {exc}")
+        print(f"ℹ️ Discord 알림 건너뜀: {exc}")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
 """
 Hermes .env 중앙 저장소 초기화
-Min이 한 번만 실행하면 됨
+기존 .env는 절대 덮어쓰지 않습니다.
 """
 from pathlib import Path
+
+EXAMPLE_CONTENT = """# Hermes Secret 중앙 저장소
+# 이 파일은 Git에 포함되지 않습니다
+# 아래 값을 실제 값으로 교체하세요
+
+WP_USER=hogh0608
+WP_APP_PASSWORD=your_application_password
+WP_BASE_URL=https://moneybull.co.kr
+
+# Telegram Bot (선택)
+# TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+# TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# AI API Keys (선택)
+# ANTHROPIC_API_KEY=sk-ant-...
+# OPENAI_API_KEY=sk-...
+"""
+
 
 def init() -> None:
     hermes_dir = Path.home() / ".hermes"
@@ -14,37 +32,20 @@ def init() -> None:
     gitignore_file = hermes_dir / ".gitignore"
     backup_dir = hermes_dir / ".backup"
 
-    example_content = """# Hermes Secret 중앙 저장소
-# 이 파일은 Git에 포함되지 않습니다
-# 아래 값을 실제 값으로 교체하세요
+    example_file.write_text(EXAMPLE_CONTENT, encoding="utf-8")
+    print(f"생성/갱신됨: {example_file}")
 
-WP_USER=hogh0608
-WP_APP_PASSWORD=your_application_password
-WP_BASE_URL=https://moneybull.co.kr
-
-# AI API Keys (선택)
-# ANTHROPIC_API_KEY=sk-ant-...
-# OPENAI_API_KEY=sk-...
-"""
-
-    if not example_file.exists():
-        example_file.write_text(example_content, encoding="utf-8")
-        print(f"생성됨: {example_file}")
-
-    if not env_file.exists():
-        env_file.write_text(example_content, encoding="utf-8")
-        print(f"생성됨: {env_file}")
-        print("   -> 실제 비밀번호로 교체하세요")
+    if env_file.exists():
+        print(f"⚠️  {env_file} 이미 존재합니다. 덮어쓰지 않습니다.")
+        print("   → 필요하면 수동으로 수정하세요.")
     else:
-        print(f"이미 존재: {env_file}")
+        env_file.write_text(EXAMPLE_CONTENT, encoding="utf-8")
+        print(f"✅ {env_file} 생성 완료")
+        print("   → 실제 비밀번호로 교체하세요")
 
-    if not gitignore_file.exists():
-        gitignore_file.write_text(".env\n.backup\n", encoding="utf-8")
-        print(f"생성됨: {gitignore_file}")
-
+    gitignore_file.write_text(".env\n.backup\n", encoding="utf-8")
     backup_dir.mkdir(exist_ok=True)
     print(f"\n중앙 저장소: {hermes_dir}")
-    print("   이 위치는 Git 외부에 있어 영구 보존됩니다.")
     print(f"백업 디렉토리: {backup_dir}")
 
 
