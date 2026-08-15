@@ -1,0 +1,11 @@
+Refine this blog draft for:
+- keyword focus consistency
+- clearer headings
+- better scannability
+- reduced repetition
+- tighter intro and outro
+
+Keep placeholders if official numbers are missing.
+
+Draft:
+{{DRAFT}}

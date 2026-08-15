@@ -1,0 +1,44 @@
+from __future__ import annotations
+
+from typing import Any, Optional
+
+
+def render_finance_template(
+    *,
+    keyword: str,
+    analysis: dict[str, Any],
+    experience_notes: Optional[str] = None,
+) -> str:
+    title = f"{keyword} 비교·정리 | 금융 초보도 한눈에 보기"
+    lines = [
+        f"# {title}",
+        "",
+        "> 📌 3줄 요약",
+        f"> - {keyword} 핵심 비교 포인트",
+        "> - 금리/수수료/우대조건 체크리스트",
+        "> - 신청 전 확인해야 할 사항",
+        "",
+        "광고 상단",
+        "",
+        "## 1. 상품 개요",
+        f"**{keyword}**의 기본 구조를 정리합니다.",
+        "",
+        "## 2. 비교 체크리스트",
+        "- 금리/수익률",
+        "- 수수료",
+        "- 우대조건",
+        "- 가입/신청 방법",
+        "",
+        "광고 중간",
+        "",
+        "## 3. 자주 묻는 질문",
+        f"**Q. {keyword} 고를 때 가장 먼저 봐야 할 항목은?**",
+        "A. 금리보다 수수료와 우대조건이 실제 지급액에 더 큰 영향을 줍니다.",
+        "",
+        "## 4. 함께 보면 좋은 정보",
+        "- 비교 사이트 활용 팁",
+        "- 은행/카드사 공식 안내",
+        "",
+        "광고 하단",
+    ]
+    return "\n".join(lines)
