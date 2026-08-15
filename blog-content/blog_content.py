@@ -43,6 +43,10 @@ def generate_draft(item: dict) -> str:
     experience_notes = item.get("experience_notes")
 
     analysis = analyze_keyword(keyword)
+    analysis["category"] = category
+    analysis["intent"] = (
+        "transactional" if category in {"government", "finance", "tax"} else analysis.get("intent", "informational")
+    )
     template_fn = TEMPLATE_MAP.get(category) or TEMPLATE_MAP["moneybull"]
 
     body = template_fn(
@@ -88,6 +92,10 @@ def main() -> int:
     output_dir = Path(args.output_dir)
     results = []
     for item in items:
+        if args.category and not item.get("category"):
+            item["category"] = args.category
+        if args.experience and not item.get("experience_notes"):
+            item["experience_notes"] = args.experience
         body, meta = generate_draft(item)
         md_path, meta_path = save_draft(item.get("keyword", "draft"), body, meta, output_dir)
         results.append({"keyword": item.get("keyword"), "md": str(md_path), "meta": str(meta_path)})
