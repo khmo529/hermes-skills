@@ -171,5 +171,46 @@ def main() -> int:
     return 0
 
 
+def run_pipeline(top_n: int = 3, output_dir: str | None = None):
+    repo_root = BASE_DIR.parent
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    base_output = Path(output_dir) if output_dir else BASE_DIR / "output" / "pipeline"
+    base_output.mkdir(parents=True, exist_ok=True)
+
+    from blog_content.blog_content import generate_draft, save_draft
+
+    items = collect_all()
+    filtered = _filter_keywords(items)
+    trends = filtered[: max(1, int(top_n))]
+
+    results = []
+    for trend in trends:
+        keyword = trend.get("keyword") or trend.get("title") or ""
+        category = trend.get("category") or "moneybull"
+        experience_notes = trend.get("experience_notes")
+
+        draft = generate_draft(
+            {
+                "keyword": keyword,
+                "category": category,
+                "experience_notes": experience_notes,
+                "trend": trend,
+            }
+        )
+        md_path, meta_path = save_draft(keyword, draft, base_output)
+        results.append(
+            {
+                "keyword": keyword,
+                "category": category,
+                "trend": trend,
+                "md": str(md_path),
+                "meta": str(meta_path),
+            }
+        )
+    return results
+
+
 if __name__ == "__main__":
     sys.exit(main())
