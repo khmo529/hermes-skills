@@ -217,74 +217,58 @@ def _upload_media(file_path: Optional[str], alt: str = "", focus_keyword: str = 
 
 
 def markdown_to_gutenberg(md: str, uploaded_images: Dict[str, str], focus_keyword: str = "") -> str:
-    lines = md.split("\n")
-    out: List[str] = []
+    # wp: 주석 사용 금지! 순수 HTML만 전송. WordPress가 자동 블록 변환함
+    html = ""
     in_list = False
-    in_table = False
-    table_rows: List[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if in_table:
-            if stripped.startswith("|"):
-                table_rows.append(stripped)
-                continue
-            else:
-                out.append(_table_to_html(table_rows))
-                table_rows = []
-                in_table = False
-        if stripped.startswith("|"):
-            table_rows.append(stripped)
-            in_table = True
+    for line in md.split("\n"):
+        line = line.strip()
+        if not line:
+            if in_list:
+                html += "</ul>\n"
+                in_list = False
             continue
-        if stripped.startswith("## "):
+        if line.startswith("## "):
             if in_list:
-                out.append("</ul>")
+                html += "</ul>\n"
                 in_list = False
-            out.append(f"<!-- wp:heading --><h2>{stripped[3:]}</h2><!-- /wp:heading -->")
-        elif stripped.startswith("- "):
-            item = stripped[2:]
+            html += f"<h2>{line[3:].strip()}</h2>\n"
+        elif line.startswith("- "):
             if not in_list:
-                out.append("<!-- wp:list --><ul>")
+                html += "<ul>\n"
                 in_list = True
-            out.append(f"<li>{item}</li>")
-        elif stripped.startswith("[이미지:"):
+            html += f"<li>{line[2:].strip()}</li>\n"
+        elif line.startswith("[이미지:"):
             if in_list:
-                out.append("</ul>")
+                html += "</ul>\n"
                 in_list = False
-            src = _extract_image_src(stripped)
-            alt = _extract_image_alt(stripped) or focus_keyword or "MoneyBull 이미지"
-            url = uploaded_images.get(src, "")
-            if not url:
-                url = f"{WP_URL}/wp-content/uploads/2026/08/{src}"
-            out.append(f'<!-- wp:image --><figure class="wp-block-image"><img src="{url}" alt="{alt}" /></figure><!-- /wp:image -->')
-        elif "핵심:" in stripped or "핵심만" in stripped:
+            import re
+
+            m_file = re.search(r"\[이미지:\s*([^\s/]+)", line)
+            m_alt = re.search(r"ALT:\s*(.+?)\]", line)
+            if m_file:
+                fname = m_file.group(1).strip()
+                alt = m_alt.group(1).strip() if m_alt else fname
+                url = uploaded_images.get(fname, f"{WP_URL}/wp-content/uploads/2026/08/{fname}")
+                html += f'<figure><img src="{url}" alt="{alt}" /><figcaption>{alt}</figcaption></figure>\n'
+        elif line.startswith("|"):
+            # 표는 이미 HTML table로 변환되어 온다고 가정, 그대로 유지
             if in_list:
-                out.append("</ul>")
+                html += "</ul>\n"
                 in_list = False
-            text = stripped
-            if text.startswith("<blockquote>") and text.endswith("</blockquote>"):
-                text = text[len("<blockquote>"):-len("</blockquote>")]
-            out.append(f"<!-- wp:quote --><blockquote><p>{text}</p></blockquote><!-- /wp:quote -->")
-        elif stripped.startswith("---"):
+            html += line + "\n"
+        elif line.startswith("핵심:") or "핵심만 먼저" in line:
             if in_list:
-                out.append("</ul>")
+                html += "</ul>\n"
                 in_list = False
-            out.append("<hr>")
-        elif stripped == "":
-            if in_list:
-                out.append("</ul>")
-                in_list = False
+            html += f"<blockquote><p><strong>{line}</strong></p></blockquote>\n"
         else:
             if in_list:
-                out.append("</ul>")
+                html += "</ul>\n"
                 in_list = False
-            if stripped:
-                out.append(f"<!-- wp:paragraph --><p>{stripped}</p><!-- /wp:paragraph -->")
-    if in_table:
-        out.append(_table_to_html(table_rows))
+            html += f"<p>{line}</p>\n"
     if in_list:
-        out.append("</ul>")
-    return "\n".join(out)
+        html += "</ul>\n"
+    return html
 
 
 def _table_to_html(rows: List[str]) -> str:
