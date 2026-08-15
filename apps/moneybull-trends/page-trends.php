@@ -62,7 +62,7 @@ echo '/* trends.css */' . "\n" . $css . "\n";
 
       <!-- Trend cards -->
       <template x-for="item in filtered, index" :key="item.keyword + item.rank + index">
-        <a class="trend-card" :href="item.url" :style="'animation-delay:' + index * 40 + 'ms'">
+        <a class="trend-card" href="javascript:void(0)" @click.prevent="goToPost(item)" :style="'animation-delay:' + index * 40 + 'ms'">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
             <div style="display:flex; align-items:center; gap:10px;">
               <div class="card-rank" aria-label="순위" x-text="item.rank"></div>
@@ -149,6 +149,24 @@ echo '/* trends.css */' . "\n" . $css . "\n";
         if (!item || !item.label) return '';
         if (item.meta && item.meta.fire && item.label === 'up') return '🔥 급상승';
         return item.label === 'new' ? 'NEW' : (item.label === 'up' ? '상승' : (item.label === 'down' ? '하락' : '유지'));
+      },
+
+      async goToPost(item) {
+        const q = String(item?.keyword || '').trim();
+        if (!q) return;
+        try {
+          const res = await fetch(`/wp-json/moneybull/v1/search?q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
+          if (!res.ok) throw new Error(res.status);
+          const data = await res.json();
+          const target = data?.url;
+          if (typeof target === 'string' && target) {
+            location.href = target;
+            return;
+          }
+          throw new Error('no_url');
+        } catch (e) {
+          location.href = `/?s=${encodeURIComponent(q)}`;
+        }
       },
 
       get filtered() {

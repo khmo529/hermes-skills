@@ -16,7 +16,47 @@ add_action('rest_api_init', function () {
         'permission_callback' => '__return_true',
         'cache_timeout' => 55,
     ]);
+    register_rest_route('moneybull/v1', '/search', [
+        'methods' => 'GET',
+        'callback' => 'moneybull_trends_search',
+        'permission_callback' => '__return_true',
+        'cache_timeout' => 30,
+    ]);
 });
+
+function moneybull_trends_search( WP_REST_Request $request ) {
+    $q = sanitize_text_field( $request->get_param( 'q' ) );
+    if ( ! $q ) {
+        return new WP_REST_Response( [ 'error' => 'missing_query', 'url' => home_url( '/' ) ], 400 );
+    }
+
+    $posts = get_posts( [
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        's'              => $q,
+        'posts_per_page' => 1,
+        'orderby'        => 'relevance',
+        'date_query'     => [
+            [
+                'after' => '6 months ago',
+            ],
+        ],
+    ] );
+
+    if ( empty( $posts ) ) {
+        return new WP_REST_Response( [
+            'error' => 'no_posts',
+            'url'   => home_url( '/?s=' . rawurlencode( $q ) ),
+        ], 404 );
+    }
+
+    $post = $posts[0];
+    $url  = get_permalink( $post );
+
+    return new WP_REST_Response( [
+        'url' => $url,
+    ], 200 );
+}
 
 function moneybull_trends_api( WP_REST_Request $request ) {
     $json = get_transient('moneybull_trends_json');
