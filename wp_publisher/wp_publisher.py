@@ -216,59 +216,156 @@ def _upload_media(file_path: Optional[str], alt: str = "", focus_keyword: str = 
     return None
 
 
+def md_table_to_html(first_row: str) -> str:
+    rows = [first_row.strip()]
+    return _build_table_html(rows)
+
+
+def _build_table_html(rows: List[str]) -> str:
+    if not rows:
+        return ""
+    html_rows = []
+    for idx, row in enumerate(rows):
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        if all("---" in c for c in cells):
+            continue
+        tag = "th" if idx == 0 else "td"
+        inner = "".join(f"<{tag}>{c}</{tag}>" for c in cells)
+        html_rows.append(f"<tr>{inner}</tr>")
+    if not html_rows:
+        return ""
+    thead = f"<thead>{html_rows[0]}</thead>" if html_rows else ""
+    body = "<tbody>" + "".join(html_rows[1:]) + "</tbody>" if len(html_rows) > 1 else ""
+    return f'<figure class="wp-block-table"><table>{thead}{body}</table></figure>'
+
+
 def markdown_to_gutenberg(md: str, uploaded_images: Dict[str, str], focus_keyword: str = "") -> str:
     # wp: 주석 사용 금지! 순수 HTML만 전송. WordPress가 자동 블록 변환함
     html = ""
     in_list = False
+    in_table = False
+    table_rows: List[str] = []
     for line in md.split("\n"):
-        line = line.strip()
-        if not line:
+        stripped = line.strip()
+        if in_table:
+            if stripped.startswith("|"):
+                table_rows.append(stripped)
+                continue
+            else:
+                html += _build_table_html(table_rows) + "\n"
+                table_rows = []
+                in_table = False
+        if stripped.startswith("|"):
+            table_rows.append(stripped)
+            in_table = True
+            continue
+        if not stripped:
             if in_list:
                 html += "</ul>\n"
                 in_list = False
             continue
-        if line.startswith("## "):
+        if stripped.startswith("## "):
             if in_list:
                 html += "</ul>\n"
                 in_list = False
-            html += f"<h2>{line[3:].strip()}</h2>\n"
-        elif line.startswith("- "):
+            html += f"<h2>{stripped[3:].strip()}</h2>\n"
+        elif stripped.startswith("- "):
             if not in_list:
                 html += "<ul>\n"
                 in_list = True
-            html += f"<li>{line[2:].strip()}</li>\n"
-        elif line.startswith("[이미지:"):
+            html += f"<li>{stripped[2:].strip()}</li>\n"
+        elif stripped.startswith("[이미지:"):
             if in_list:
                 html += "</ul>\n"
                 in_list = False
             import re
 
-            m_file = re.search(r"\[이미지:\s*([^\s/]+)", line)
-            m_alt = re.search(r"ALT:\s*(.+?)\]", line)
+            m_file = re.search(r"\[이미지:\s*([^\s/]+)", stripped)
+            m_alt = re.search(r"ALT:\s*(.+?)\]", stripped)
             if m_file:
                 fname = m_file.group(1).strip()
                 alt = m_alt.group(1).strip() if m_alt else fname
                 url = uploaded_images.get(fname, f"{WP_URL}/wp-content/uploads/2026/08/{fname}")
-                html += f'<figure><img src="{url}" alt="{alt}" /><figcaption>{alt}</figcaption></figure>\n'
-        elif line.startswith("|"):
-            # 표는 이미 HTML table로 변환되어 온다고 가정, 그대로 유지
+                media_id = _upload_media_by_url(url, alt=alt)
+                if media_id:
+                    html += f'<!-- wp:image {{"id":{media_id}}} --><figure class="wp-block-image size-large"><img src="{url}" alt="{alt}" class="wp-image-{media_id}" /></figure><!-- /wp:image -->\n'
+                else:
+                    html += f'<figure><img src="{url}" alt="{alt}" /><figcaption>{alt}</figcaption></figure>\n'
+        elif stripped.startswith("핵심:") or "핵심만 먼저" in stripped:
             if in_list:
                 html += "</ul>\n"
                 in_list = False
-            html += line + "\n"
-        elif line.startswith("핵심:") or "핵심만 먼저" in line:
-            if in_list:
-                html += "</ul>\n"
-                in_list = False
-            html += f"<blockquote><p><strong>{line}</strong></p></blockquote>\n"
+            html += f"<blockquote><p><strong>{stripped}</strong></p></blockquote>\n"
         else:
             if in_list:
                 html += "</ul>\n"
                 in_list = False
-            html += f"<p>{line}</p>\n"
+            html += f"<p>{stripped}</p>\n"
+    if in_table:
+        html += _build_table_html(table_rows) + "\n"
     if in_list:
         html += "</ul>\n"
     return html
+
+
+def _upload_media_by_url(url: str, alt: str = "") -> Optional[int]:
+    try:
+        r = requests.get(url, timeout=20, allow_redirects=True)
+        if r.status_code != 200:
+            return None
+        headers = {
+            "Authorization": f"Basic {base64.b64encode(f'{WP_USER}:{WP_APP_PASSWORD}'.encode('utf-8')).decode('utf-8')}",
+        }
+        files = {"file": ("image.jpg", r.content, "image/jpeg")}
+        data = {}
+        if alt:
+            data["alt_text"] = alt
+        r2 = requests.post(
+            _api_path("media"),
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=30,
+        )
+        if r2.status_code in (200, 201):
+            return r2.json().get("id")
+    except Exception as exc:
+        print(f"⚠️ 이미지 ID 업로드 실패: {url} — {exc}")
+    return None
+
+
+def _get_or_create_term(endpoint: str, name: str) -> Optional[int]:
+    r = requests.get(
+        _api_path(endpoint),
+        params={"search": name, "per_page": 50},
+        auth=(WP_USER, WP_APP_PASSWORD),
+        timeout=20,
+    )
+    if r.status_code == 200:
+        for item in r.json():
+            if item.get("name") == name:
+                return item.get("id")
+        # create if missing
+        r2 = requests.post(
+            _api_path(endpoint),
+            json={"name": name},
+            auth=(WP_USER, WP_APP_PASSWORD),
+            timeout=20,
+        )
+        if r2.status_code in (200, 201):
+            return r2.json().get("id")
+    return None
+
+
+def _get_or_create_category_id(name: str, slug: str = "") -> Optional[int]:
+    term_id = _get_or_create_term("categories", name)
+    if term_id:
+        return term_id
+    return None
+
+
+def _get_or_create_tag_id(name: str) -> Optional[int]:
+    return _get_or_create_term("tags", name)
 
 
 def _table_to_html(rows: List[str]) -> str:
@@ -366,18 +463,16 @@ class WPPublisher:
         meta: Optional[Dict[str, Any]] = None,
         slug: Optional[str] = None,
     ) -> int:
-        cat_id = _get_category_id(category or DEFAULT_CATEGORY)
-        if cat_id is None:
+        cat_id = _get_or_create_category_id(category or DEFAULT_CATEGORY or "general")
+        if not cat_id:
             cat_id = 1
 
         tag_ids: List[int] = []
         merged_tags = [*(tags or []), *DEFAULT_TAGS]
-        if merged_tags:
-            self._tags_cache = self._tags_cache or _build_tags_cache()
-            for t in merged_tags:
-                tid = _resolve_tag(t, self._tags_cache)
-                if tid:
-                    tag_ids.append(tid)
+        for t in merged_tags:
+            tid = _get_or_create_tag_id(str(t))
+            if tid:
+                tag_ids.append(tid)
 
         raw_content = content or ""
         if content_blocks:
@@ -404,13 +499,11 @@ class WPPublisher:
             auth=(self.user, self.password),
             timeout=30,
         )
-
         if r.status_code == 201:
             post_id = r.json()["id"]
             print(f"✅ Draft 생성: ID {post_id} — {title}")
             return post_id
-        else:
-            raise RuntimeError(f"게시 실패 HTTP {r.status_code}: {r.text[:300]}")
+        raise RuntimeError(f"게시 실패 HTTP {r.status_code}: {r.text[:300]}")
 
     def get_post(self, post_id: int) -> Dict[str, Any]:
         r = requests.get(_api_path(f"posts/{post_id}"), auth=(self.user, self.password), timeout=15)
@@ -435,12 +528,11 @@ class WPPublisher:
         if slug:
             payload["slug"] = slug
         if category is not None:
-            cat_id = _get_category_id(category)
+            cat_id = _get_or_create_category_id(category or DEFAULT_CATEGORY or "general")
             if cat_id:
                 payload["categories"] = [cat_id]
         if tags is not None:
-            self._tags_cache = self._tags_cache or _build_tags_cache()
-            tag_ids = [_resolve_tag(t, self._tags_cache) for t in tags]
+            tag_ids = [_get_or_create_tag_id(str(t)) for t in tags]
             tag_ids = [t for t in tag_ids if t]
             if tag_ids:
                 payload["tags"] = tag_ids
