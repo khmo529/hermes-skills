@@ -1,0 +1,116 @@
+name: deploy-moneybull
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'trends/**', 'apps/moneybull-trends/**' ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        blog: [ moneybull, blog2, blog3 ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed files
+        id: changes
+        run: |
+          if git diff --name-only origin/main..HEAD | grep -E '^apps/moneybull-trends/'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Vultr snapshot
+        if: matrix.blog == 'moneybull' && steps.changes.outputs.changed == 'true'
+        id: snapshot
+        uses: vultr/github-action@v1
+        with:
+          vultrApiKey: ${{ secrets.VULTR_API_KEY }}
+          action: snapshot-create
+          instanceId: ${{ secrets.VULTR_INSTANCE_ID_MONEYBULL }}
+          description: "moneybull-trends-${{ github.sha }}"
+
+      - name: Prepare secrets
+        id: secrets
+        run: |
+          case "${{ matrix.blog }}" in
+            moneybull) echo "ssh_host=${{ secrets.SSH_HOST_MONEYBULL }}" >> $GITHUB_OUTPUT; echo "ssh_user=${{ secrets.SSH_USER_MONEYBULL }}" >> $GITHUB_OUTPUT; echo "wp_path=${{ secrets.WP_PATH_MONEYBULL }}" >> $GITHUB_OUTPUT; echo "cf_zone=${{ secrets.CLOUDFLARE_ZONE_MONEYBULL }}" >> $GITHUB_OUTPUT ;;
+            blog2) echo "ssh_host=${{ secrets.SSH_HOST_BLOG2 }}" >> $GITHUB_OUTPUT; echo "ssh_user=${{ secrets.SSH_USER_BLOG2 }}" >> $GITHUB_OUTPUT; echo "wp_path=${{ secrets.WP_PATH_BLOG2 }}" >> $GITHUB_OUTPUT; echo "cf_zone=${{ secrets.CLOUDFLARE_ZONE_BLOG2 }}" >> $GITHUB_OUTPUT ;;
+            blog3) echo "ssh_host=${{ secrets.SSH_HOST_BLOG3 }}" >> $GITHUB_OUTPUT; echo "ssh_user=${{ secrets.SSH_USER_BLOG3 }}" >> $GITHUB_OUTPUT; echo "wp_path=${{ secrets.WP_PATH_BLOG3 }}" >> $GITHUB_OUTPUT; echo "cf_zone=${{ secrets.CLOUDFLARE_ZONE_BLOG3 }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Deploy to server
+        if: steps.changes.outputs.changed == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.secrets.outputs.ssh_host }}
+          username: ${{ steps.secrets.outputs.ssh_user }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -euo pipefail
+            WP_PATH="${{ steps.secrets.outputs.wp_path }}"
+            RELEASES="$WP_PATH/releases"
+            TS=$(date +%Y%m%d%H%M%S)
+            mkdir -p "$RELEASES"
+            TARGET="$RELEASES/$TS"
+            PREV=$(ls -1 "$RELEASES" | sort | tail -n 2 | head -n 1 || true)
+
+            mkdir -p "$TARGET/apps/moneybull-trends"
+            mkdir -p "$WP_PATH/wp-content/uploads/moneybull"
+
+            echo "::group::rsync trends"
+            rsync -az --delete --exclude '.git' apps/moneybull-trends/ "$TARGET/apps/moneybull-trends/"
+            echo "::endgroup::"
+
+            ln -sfn "$TARGET" "$RELEASES/prev"
+            ln -sfn "$TARGET/apps/moneybull-trends" "$WP_PATH/current-trends"
+
+            cd "$WP_PATH"
+            TRENDS_JSON="$WP_PATH/current-trends/trends.json"
+            if [ -f "$TRENDS_JSON" ]; then
+              cp "$TRENDS_JSON" "wp-content/uploads/moneybull/trends.json"
+            fi
+
+            if command -v wp >/dev/null 2>&1; then
+              wp transient delete --all || true
+              wp cache flush || true
+            fi
+
+            CF_ZONE="${{ steps.secrets.outputs.cf_zone }}"
+            CF_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+            if [ -n "${CF_ZONE:-}" ] && [ -n "${CF_TOKEN:-}" ]; then
+              curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/purge_cache" \
+                -H "Authorization: Bearer ${CF_TOKEN}" \
+                -H "Content-Type: application/json" \
+                --data '{"purge_everything":true}' >/dev/null || true
+            fi
+
+      - name: Health check
+      - name: Health check
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          set -e
+          URLS=""
+          case "${{ matrix.blog }}" in
+            moneybull) URLS="https://moneybull.co.kr/trends" ;;
+            blog2) URLS="https://blog2.example.com/trends" ;;
+            blog3) URLS="https://blog3.example.com/trends" ;;
+          esac
+
+          for u in $URLS; do
+            status=$(curl -o /dev/null -s -w "%{http_code}" "$u" || true)
+            echo "$u => $status"
+            if [ "$status" != "200" ]; then
+              echo "Health failed for $u"
+              exit 1
+            fi
+          done
