@@ -3,8 +3,16 @@
 get_header();
 $json_path='/home/hogh0608/htdocs/moneybull.co.kr/wp-content/uploads/moneybull/trends.json';
 if(!file_exists($json_path)) $json_path='/var/www/moneybull/wp-content/uploads/moneybull/trends.json';
-$trends=json_decode(@file_get_contents($json_path), true);
-if(!$trends) $trends=[];
+$raw=json_decode(@file_get_contents($json_path), true);
+if(!$raw || !isset($raw['trends']) || count($raw['trends'])<5){
+ $trends=[
+  ["rank"=>1,"keyword"=>"챗GPT","change"=>"+3%","badge"=>"NEW","cat"=>"IT·트렌드","source"=>"base","url"=>"/?s=챗GPT"],
+  ["rank"=>2,"keyword"=>"아이폰 16","change"=>"+3%","badge"=>"NEW","cat"=>"IT·트렌드","source"=>"base","url"=>"/?s=아이폰 16"],
+  ["rank"=>3,"keyword"=>"비트코인","change"=>"+2%","badge"=>"","cat"=>"경제·금융","source"=>"base","url"=>"/?s=비트코인"],
+ ];
+} else {
+ $trends=$raw['trends'];
+}
 ?>
 <style>
 .trends-wrap{max-width:1100px;margin:0 auto;padding:40px 20px 140px}
@@ -39,6 +47,10 @@ if(!$trends) $trends=[];
 <div class="trend-kw"><?php echo $t['keyword'];?></div>
 <div class="trend-change"><?php echo $t['change'];?></div>
 <div class="trend-src"><?php echo $t['source'];?> · 클릭하면 관련 글</div>
+<div style="margin-top:8px;display:flex;gap:6px">
+<button onclick="event.stopPropagation();navigator.clipboard.writeText('<?php echo $t['keyword'];?>');this.innerText='복사됨!';setTimeout(()=>this.innerText='📋 복사',1000)" style="font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid #e5e7eb;background:#fff;cursor:pointer">📋 복사</button>
+<button onclick="event.stopPropagation();location.href='<?php echo $t['url'];?>'" style="font-size:11px;padding:4px 10px;border-radius:20px;border:0;background:#0f172a;color:#fff;cursor:pointer">글쓰기</button>
+</div>
 </div>
 <?php endforeach;?>
 </div>

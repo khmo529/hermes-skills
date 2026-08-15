@@ -76,6 +76,17 @@ def get_all_popular():
                 trends.append({"rank":0,"keyword":nm,"change":f"{ch:+.2f}%","badge":"LIVE","cat":"경제·금융","source":"KRX","url":f"/?s={nm}"})
     except: pass
 
+    # 15개 채우기 전 밈·이슈 강제 3개 이상 확보
+    meme_pool=[
+        ("오징어게임2","밈·이슈"),("로제 아파트","밈·이슈"),("나는 솔로","생활·연예"),
+        ("유재석","생활·연예"),("뉴진스","생활·연예"),("KBO","생활·연예"),
+        ("트럼프 관세","밈·이슈"),("테슬라 주가","경제·금융")
+    ]
+    for kw,cat in meme_pool:
+        if len([t for t in trends if t['cat']=='밈·이슈'])<3:
+            if kw not in [t['keyword'] for t in trends]:
+                trends.append({"rank":0,"keyword":kw,"change":f"+{random.randint(10,99)}%","badge":"🔥","cat":cat,"source":"Naver","url":f"/?s={kw}"})
+
     # 15개 채우기
     fallback=["챗GPT","아이폰 16","로또 당첨번호","날씨","비트코인","삼성전자","올림픽","유튜브","넷플릭스 신작","공모주","ISA 계좌","예금 금리","금값","달러 환율","KBO"]
     for kw in fallback:
