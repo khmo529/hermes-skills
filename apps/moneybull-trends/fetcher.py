@@ -233,7 +233,7 @@ def collect():
             "url": item.get('url', '/?s=' + requests.utils.quote(item.get('keyword', ''))),
         })
 
-    if not merged:
+    if not merged or len(merged) < 15:
         base = [
             ("ISA 계좌", 2.3, "up"), ("예금 금리", 0.8, "new"), ("금값", 1.2, "new"),
             ("달러 환율", -0.5, "stable"), ("미국 주식", 1.5, "stable"), ("삼성전자", 0.9, "stable"),
@@ -241,9 +241,12 @@ def collect():
             ("S&P500", 1.3, "stable"), ("비트코인", -1.2, "stable"), ("주택담보대출 금리", 1.6, "up"),
             ("IRP 계좌", 1.0, "stable"), ("ISA 비과세", 2.1, "up"), ("달러 투자", 0.7, "stable"),
         ]
-        for i, (kw, change_pct, label) in enumerate(base, start=1):
+        existing = {item['keyword'] for item in merged}
+        for kw, change_pct, label in base:
+            if kw in existing:
+                continue
             merged.append({
-                "keyword": kw, "category": "금융", "rank": i, "score": 100 - i * 7,
+                "keyword": kw, "category": "금융", "rank": 0, "score": 0,
                 "change_pct": change_pct, "change": f"{change_pct:+.2f}%", "label": label,
                 "meta": {"fire": True if change_pct >= 20 else {}},
                 "related_posts": _inject_related_posts([kw]),
@@ -251,12 +254,17 @@ def collect():
                 "source": "KRX",
                 "url": '/?s=' + requests.utils.quote(kw),
             })
+            if len(merged) >= 15:
+                break
+
+    for i, item in enumerate(merged[:15], start=1):
+        item['rank'] = i
 
     payload = {
         "source": "moneybull-realtime-trends",
         "updated_at": datetime.now(KST).isoformat(),
-        "count": len(merged),
-        "trends": merged,
+        "count": len(merged[:15]),
+        "trends": merged[:15],
     }
     try:
         OUT_FILE.write_text(__import__('json').dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
