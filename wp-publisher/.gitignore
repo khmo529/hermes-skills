@@ -1,0 +1,6 @@
+
+wp-publisher/.env
+wp-publisher/.env
+trend-scanner/output/**
+*.pyc
+__pycache__/
