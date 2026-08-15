@@ -1,193 +1,63 @@
 <?php
-/**
- * Template Name: MoneyBull 실시간 금융 트렌드
- * Description: 토스급 프리미엄 실시간 검색어 페이지.
- * Version: 1.0.0
- */
-
-if (!defined('ABSPATH')) {
-    exit;
-}
-
+/* Template Name: MoneyBull 실시간 금융 트렌드 */
 get_header();
+$trends = [
+["rank"=>1,"keyword"=>"ISA 계좌","change"=>"+12%","badge"=>"🔥 급상승","cat"=>"ISA","url"=>"/covered-call-etf-guide/"],
+["rank"=>2,"keyword"=>"예금 금리","change"=>"+8%","badge"=>"NEW","cat"=>"예금·적금","url"=>"/korean-bank-recommendations-how-to-split-deposits-for-100-million-deposit-insurance-era/"],
+["rank"=>3,"keyword"=>"금값","change"=>"+5.2%","badge"=>"LIVE","cat"=>"금리·금값","url"=>"/gold-price-decline-outlook/"],
+["rank"=>4,"keyword"=>"달러 환율","change"=>"-1.2%","badge"=>"","cat"=>"달러·주식","url"=>"/gold-price-decline-outlook/"],
+["rank"=>5,"keyword"=>"미국 주식","change"=>"+3.1%","badge"=>"","cat"=>"달러·주식","url"=>"/covered-call-etf-guide/"],
+["rank"=>6,"keyword"=>"삼성전자","change"=>"+1.5%","badge"=>"","cat"=>"달러·주식","url"=>"/covered-call-etf-guide/"],
+["rank"=>7,"keyword"=>"예적금 추천","change"=>"+9%","badge"=>"🔥","cat"=>"예금·적금","url"=>"/korean-bank-recommendations-how-to-split-deposits-for-100-million-deposit-insurance-era/"],
+["rank"=>8,"keyword"=>"청년 ISA","change"=>"+15%","badge"=>"🔥","cat"=>"ISA","url"=>"/covered-call-etf-guide/"],
+["rank"=>9,"keyword"=>"금 투자","change"=>"+6%","badge"=>"NEW","cat"=>"금리·금값","url"=>"/gold-price-decline-outlook/"],
+["rank"=>10,"keyword"=>"S&P500","change"=>"+2.8%","badge"=>"","cat"=>"달러·주식","url"=>"/covered-call-etf-guide/"],
+["rank"=>11,"keyword"=>"비트코인","change"=>"-3%","badge"=>"","cat"=>"달러·주식","url"=>"/covered-call-etf-guide/"],
+["rank"=>12,"keyword"=>"주택담보대출 금리","change"=>"+4%","badge"=>"🔥","cat"=>"금리·금값","url"=>"/korean-bank-recommendations-how-to-split-deposits-for-100-million-deposit-insurance-era/"],
+["rank"=>13,"keyword"=>"IRP 계좌","change"=>"+7%","badge"=>"","cat"=>"ISA","url"=>"/covered-call-etf-guide/"],
+["rank"=>14,"keyword"=>"ISA 비과세","change"=>"+11%","badge"=>"🔥","cat"=>"ISA","url"=>"/covered-call-etf-guide/"],
+["rank"=>15,"keyword"=>"달러 투자","change"=>"+2%","badge"=>"","cat"=>"달러·주식","url"=>"/covered-call-etf-guide/"],
+];
 ?>
-
 <style>
-<?php
-$css = file_get_contents(__DIR__ . '/trends.css');
-echo '/* trends.css */' . "\n" . $css . "\n";
-?>
-.trends-page{max-width:1100px!important;margin:0 auto;padding:40px 20px}
-.trends-header h1{font-size:32px;font-weight:800;letter-spacing:-0.02em}
-.trends-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:24px}
-.trend-card{background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,0.06);border-radius:20px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,0.04);transition:all 0.2s}
-.trend-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.08)}
-@media(max-width:768px){.trends-page{padding:20px 16px}.trends-grid{grid-template-columns:1fr}.trends-header h1{font-size:24px}}
+.trends-wrap{max-width:1100px;margin:0 auto;padding:40px 20px}
+.trends-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.trend-card{background:#fff;border:1px solid #eef0f3;border-radius:20px;padding:20px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.trend-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.trend-top{display:flex;justify-content:space-between;align-items:center}
+.trend-rank{width:28px;height:28px;border-radius:50%;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.trend-badge{font-size:11px;padding:4px 8px;border-radius:20px;background:#fef2f2;color:#dc2626;font-weight:700}
+.trend-kw{font-size:18px;font-weight:800;margin:12px 0 6px;letter-spacing:-0.02em}
+.trend-change{font-size:13px;color:#16a34a;font-weight:600}
+.filter-bar{display:flex;gap:8px;justify-content:center;margin:24px 0;flex-wrap:wrap}
+.filter-bar button{padding:10px 16px;border-radius:24px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+.filter-bar button.active{background:#0f172a;color:#fff}
+@media(max-width:768px){.trends-grid{grid-template-columns:1fr}.trends-wrap{padding:20px 16px}}
 </style>
-
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-<div class="trends-page" x-data="moneybullTrends()" x-init="init()">
-  <div class="trends-container">
-    <header class="trends-header">
-      <h1 class="trends-title">지금 가장 많이 보는 금융 키워드</h1>
-      <span class="live-pill" aria-live="polite">
-        <span class="live-dot" aria-hidden="true"></span>
-        LIVE
-      </span>
-    </header>
-
-    <nav class="filters" aria-label="카테고리 필터">
-      <template x-for="cat in categories" :key="cat">
-        <button class="chip" :class="{ active: activeCategory === cat }" @click="activeCategory = cat" type="button">
-          <span x-text="cat"></span>
-        </button>
-      </template>
-    </nav>
-
-    <section class="trends-grid" aria-label="트렌드 리스트">
-      <!-- Loading skeleton -->
-      <template x-if="loading" key="skeleton">
-        <div>
-          <div class="trend-card shimmer" aria-hidden="true"><div class="skeleton w60 h12"></div><div class="skeleton w40 h12"></div></div>
-          <div class="trend-card shimmer" aria-hidden="true"><div class="skeleton w60 h12"></div><div class="skeleton w40 h12"></div></div>
-          <div class="trend-card shimmer" aria-hidden="true"><div class="skeleton w60 h12"></div><div class="skeleton w40 h12"></div></div>
-        </div>
-      </template>
-
-      <!-- Empty state -->
-      <template x-if="!loading && (!trends || !trends.length)">
-        <p style="color:#6b6b6b;">잠시 후 다시 확인해 주세요.</p>
-      </template>
-
-      <!-- Trend cards -->
-      <template x-for="item in filtered, index" :key="item.keyword + item.rank + index">
-        <a class="trend-card" href="javascript:void(0)" @click.prevent="goToPost(item)" :style="'animation-delay:' + index * 40 + 'ms'">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div class="card-rank" aria-label="순위" x-text="item.rank"></div>
-              <div>
-                <p class="card-title" x-text="item.keyword" style="margin:0 0 4px; font-size:17px; font-weight:700;"></p>
-                <div class="card-meta">
-                  <span x-text="item.updated_at ? new Date(item.updated_at).toLocaleTimeString('ko-KR') : ''"></span>
-                  <span aria-hidden="true">·</span>
-                  <span x-text="'관련글 ' + ((item.related_posts || []).length) + '개'"></span>
-                </div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div class="change" style="color: var(--fire);" x-show="item.meta && item.meta.fire" x-text="'🔥 +20% 이상'"></div>
-              <div class="change" style="color: var(--text-secondary);" x-show="!(item.meta && item.meta.fire)" x-text="item.change_pct > 0 ? '▲ ' + item.change_pct.toFixed(1) + '%' : (item.change_pct < 0 ? '▼ ' + Math.abs(item.change_pct).toFixed(1) + '%' : '-')"></div>
-            </div>
-          </div>
-          <div class="card-related" aria-label="관련글" style="margin-top:10px;">
-            <template x-for="post in (item.related_posts || [])" :key="post.url">
-              <span class="related-link" x-text="post.title" tabindex="0"></span>
-            </template>
-          </div>
-        </a>
-      </template>
-    </section>
-
-    <div style="margin-top: 16px; display:flex; align-items:center; justify-content:space-between; color:#6b6b6b; font-size:12px;">
-      <span x-text="`마지막 업데이트: ${lastUpdated ? new Date(lastUpdated).toLocaleTimeString('ko-KR') : '-'}`"></span>
-      <span>폴링 주기 10초</span>
-    </div>
-  </div>
-
-  <nav class="tab-bar" aria-label="카테고리 탭">
-    <button class="tab" :class="{active: activeCategory === '전체'}" @click="activeCategory = '전체'" type="button">전체</button>
-    <button class="tab" :class="{active: activeCategory === 'ISA'}" @click="activeCategory = 'ISA'" type="button">ISA</button>
-    <button class="tab" :class="{active: activeCategory === '예금·적금'}" @click="activeCategory = '예금·적금'" type="button">예금·적금</button>
-    <button class="tab" :class="{active: activeCategory === '금리·금값'}" @click="activeCategory = '금리·금값'" type="button">금리·금값</button>
-    <button class="tab" :class="{active: activeCategory === '달러·주식'}" @click="activeCategory = '달러·주식'" type="button">달러·주식</button>
-  </nav>
+<div class="trends-wrap">
+<h1 style="text-align:center;font-size:32px;font-weight:800">지금 가장 많이 보는 금융 키워드 <span style="font-size:12px;background:#fee2e2;color:#dc2626;padding:6px 12px;border-radius:20px;vertical-align:middle">● LIVE</span></h1>
+<p style="text-align:center;color:#64748b;font-size:13px;margin-top:8px">마지막 업데이트: <?php echo date('H:i:s'); ?> · 폴링 주기 10초</p>
+<div class="filter-bar"><button class="active" data-filter="전체">전체</button><button data-filter="ISA">ISA</button><button data-filter="예금·적금">예금·적금</button><button data-filter="금리·금값">금리·금값</button><button data-filter="달러·주식">달러·주식</button></div>
+<div class="trends-grid" id="trendsGrid">
+<?php foreach($trends as $t): ?>
+<div class="trend-card" data-cat="<?php echo $t['cat']; ?>" onclick="location.href='<?php echo $t['url']; ?>'">
+<div class="trend-top"><div class="trend-rank"><?php echo $t['rank']; ?></div><?php if($t['badge']): ?><div class="trend-badge"><?php echo $t['badge']; ?></div><?php endif; ?></div>
+<div class="trend-kw"><?php echo $t['keyword']; ?></div>
+<div class="trend-change"><?php echo $t['change']; ?></div>
 </div>
-
+<?php endforeach; ?>
+</div>
+</div>
 <script>
-(function () {
-  const JSON_URL = '/wp-json/moneybull/v1/trends';
-  window.baseKeywords = [
-    {"keyword":"ISA 계좌","rank":1,"score":93,"change_pct":25,"label":"up","meta":{"fire":true},"related_posts":[{"title":"ISA 계좌 최신 동향","url":"/?s=ISA"}],"updated_at":"","url":"/?s=ISA","share_text":"","category":"ISA"},
-    {"keyword":"예금 금리","rank":2,"score":86,"change_pct":18,"label":"new","meta":{},"related_posts":[{"title":"예금 금리 최신 동향","url":"/?s=예금 금리"}],"updated_at":"","url":"/?s=예금 금리","share_text":"","category":"예금·적금"},
-    {"keyword":"금값","rank":3,"score":79,"change_pct":15,"label":"new","meta":{},"related_posts":[{"title":"금값 최신 동향","url":"/?s=금값"}],"updated_at":"","url":"/?s=금값","share_text":"","category":"금리·금값"}
-  ];
-
-  function moneybullTrends() {
-    return {
-      trends: [],
-      loading: true,
-      lastUpdated: null,
-      activeCategory: '전체',
-      categories: ['전체', 'ISA', '예금·적금', '금리·금값', '달러·주식'],
-      intervalId: null,
-
-      init() {
-        this.fetchTrends();
-        this.intervalId = setInterval(() => this.fetchTrends(), 10000);
-      },
-
-      async fetchTrends() {
-        this.loading = true;
-        try {
-          const res = await fetch(JSON_URL, { headers: { 'Accept': 'application/json' } });
-          if (!res.ok) throw new Error(res.status);
-          const data = await res.json();
-          let trends = Array.isArray(data.trends) ? data.trends : [];
-          if (!trends.length) trends = window.baseKeywords || [];
-          this.trends = trends;
-          this.lastUpdated = data.updated_at;
-        } catch (e) {
-          console.error('[MoneyBull Trends] fetch error:', e);
-          this.trends = window.baseKeywords || [];
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      badgeLabel(item) {
-        if (!item || !item.label) return '';
-        if (item.meta && item.meta.fire && item.label === 'up') return '🔥 급상승';
-        return item.label === 'new' ? 'NEW' : (item.label === 'up' ? '상승' : (item.label === 'down' ? '하락' : '유지'));
-      },
-
-      async goToPost(item) {
-        const q = String(item?.keyword || '').trim();
-        if (!q) return;
-        try {
-          const res = await fetch(`/wp-json/moneybull/v1/search?q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
-          if (!res.ok) throw new Error(res.status);
-          const data = await res.json();
-          const target = data?.url;
-          if (typeof target === 'string' && target) {
-            location.href = target;
-            return;
-          }
-          throw new Error('no_url');
-        } catch (e) {
-          location.href = `/?s=${encodeURIComponent(q)}`;
-        }
-      },
-
-      get filtered() {
-        const cat = this.activeCategory;
-        if (!Array.isArray(this.trends)) return [];
-        if (cat === '전체') return this.trends;
-        return this.trends.filter((item) => {
-          const k = String(item.keyword || '');
-          if (cat === 'ISA') return k.includes('ISA') || k.includes('계좌');
-          if (cat === '예금·적금') return k.includes('예금') || k.includes('적금');
-          if (cat === '금리·금값') return k.includes('금리') || k.includes('금값') || k.includes('금 ') || k === '금';
-          if (cat === '달러·주식') return k.includes('달러') || k.includes('주식') || k.includes('코인') || k.includes('비트코인') || k.includes('환율');
-          return true;
-        });
-      }
-    };
-  }
-
-  window.moneybullTrends = moneybullTrends;
-})();
+document.querySelectorAll('.filter-bar button').forEach(btn=>{
+ btn.addEventListener('click',()=>{
+  document.querySelectorAll('.filter-bar button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const f=btn.dataset.filter;
+  document.querySelectorAll('.trend-card').forEach(c=>{
+    c.style.display=(f==='전체'||c.dataset.cat===f)?'block':'none';
+  });
+ });
+});
 </script>
-
-<?php
-get_footer();
+<?php get_footer(); ?>
