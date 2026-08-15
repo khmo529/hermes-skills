@@ -24,9 +24,14 @@ class DraftInput:
     output_dir: Path = Path("output")
 
 
-def _extract_title_from_markdown(markdown_text: str) -> str:
-    match = re.search(r"^#\s+(.+)$", markdown_text, flags=re.MULTILINE)
-    return (match.group(1).strip() if match else "Untitled").strip()
+def _extract_title_from_html(html: str) -> str:
+    match = re.search(r"<h2[^>]*id=[\"']([^\"']+)[\"'][^>]*>(.*?)</h2>", html, flags=re.DOTALL | re.IGNORECASE)
+    if match:
+        return re.sub(r"<[^>]+>", "", match.group(2)).strip()
+    match = re.search(r"<h2[^>]*>(.*?)</h2>", html, flags=re.DOTALL | re.IGNORECASE)
+    if match:
+        return re.sub(r"<[^>]+>", "", match.group(1)).strip()
+    return "Untitled"
 
 
 def _today() -> str:
@@ -186,7 +191,7 @@ def generate_draft(item: Dict[str, Any]) -> Dict[str, Any]:
         content = _fallback_template(keyword, category)
         meta_block = ""
 
-    title = _extract_title_from_markdown(content) or f"2026 {keyword} 신청 자격 및 방법 | 한눈에 보기"
+    title = _extract_title_from_html(content) or f"2026 {keyword} 신청 자격 및 방법 | 한눈에 보기"
     meta = {
         "focus_keyword": keyword,
         "category": category,

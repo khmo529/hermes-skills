@@ -200,13 +200,19 @@ def run_pipeline(top_n: int = 3, output_dir: str | None = None):
             }
         )
         md_path, meta_path = save_draft(keyword, draft, base_output)
+        try:
+            meta_dict = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+        except Exception:
+            meta_dict = {}
         results.append(
             {
                 "keyword": keyword,
                 "category": category,
                 "trend": trend,
                 "md": str(md_path),
-                "meta": str(meta_path),
+                "meta": meta_dict,
+                "title": draft.get("title"),
+                "content": draft.get("content"),
             }
         )
     return results

@@ -1,6 +1,6 @@
 {
   "keyword": "코인 세금 신고",
-  "title": "2026 코인 세금 신고 신청 자격 및 방법 | 한눈에 보기",
+  "title": "Untitled",
   "category": "세금",
   "analysis": {
     "keyword": "코인 세금 신고",
@@ -10,22 +10,23 @@
   },
   "meta": {
     "focus_keyword": "코인 세금 신고",
-    "seo_title": "2026 코인 세금 신고 신청 자격 및 방법 | 한눈에 보기",
-    "meta_description": "코인 세금 신고에 대한 신청 조건, 절차, 필요 서류, 문의처까지 정리했습니다. 최신 정보로 쉽게 확인하세요.",
-    "intent": "informational",
     "category": "세금",
+    "intent": "informational",
     "cpc_band": "low-medium",
-    "headings": [
-      "1. 지원 대상 및 조건",
-      "2. 신청 절차",
-      "3. 자주 묻는 질문",
-      "4. 함께 보면 좋은 정보"
-    ],
-    "internal_links": [
-      "관련 지원금 비교 정리",
-      "신청 서류 체크리스트",
-      "정부24 바로가기"
-    ]
+    "meta_block": "",
+    "trend": {
+      "keyword": "코인 세금 신고",
+      "source": "naver_datalab",
+      "trend": "+85%",
+      "score": 84,
+      "growth": 0.85,
+      "days": 87,
+      "snippet": "네이버 검색량 상승 코인 세금 신고",
+      "category": "세금",
+      "estimated_cpc": "high",
+      "sustainability": "medium",
+      "rank": 2
+    }
   },
   "md": "C:\\Users\\mark\\tmp-hermes-skills\\trend_scanner\\output\\pipeline\\2026-08-15_코인-세금-신고.md"
 }

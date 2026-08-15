@@ -51,4 +51,9 @@ def run(top_n: int = 3, publish: bool = False) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(run())
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--publish", action="store_true")
+    parser.add_argument("--top-n", type=int, default=3)
+    args = parser.parse_args()
+    raise SystemExit(run(top_n=args.top_n, publish=args.publish))
