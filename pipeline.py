@@ -2,14 +2,13 @@
 """
 Hermes MoneyBull Pipeline
 trend-scanner -> blog-content -> wp-publisher
-일일 1개 Draft 생성
+일일 1개 Draft 생성 + Telegram 승인 알림
 """
 
 from __future__ import annotations
 
 import json
 import sys
-import requests
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -39,12 +38,14 @@ def run(top_n: int = 1, publish: bool = False) -> int:
     draft = generate_draft(item)
     print(f"초안 생성 완료: {draft.get('keyword')} ({draft.get('category')})")
 
+    post_id = None
     if publish:
         print("Step 2/2: blog-content -> wp-publisher")
         try:
             from wp_publisher.wp_publisher import WPPublisher  # type: ignore
             publisher = WPPublisher()
             payload = _build_wp_payload(draft)
+            import requests
             r = requests.post(
                 f"{publisher.url}/wp-json/wp/v2/posts",
                 json=payload,
@@ -58,6 +59,8 @@ def run(top_n: int = 1, publish: bool = False) -> int:
                 raise RuntimeError(f"게시 실패 HTTP {r.status_code}: {r.text[:300]}")
         except Exception as exc:
             print(f" - Draft 게시 실패: {draft.get('keyword')} — {exc}")
+
+    _notify_telegram(draft, post_id)
 
     print("=== Pipeline 완료 ===")
     return 0
@@ -90,6 +93,20 @@ def _build_wp_payload(draft: Dict[str, Any]) -> Dict[str, Any]:
     if slug:
         payload["slug"] = slug
     return payload
+
+
+def _notify_telegram(draft: Dict[str, Any], post_id: Optional[int]) -> None:
+    try:
+        from telegram_bot import TelegramBot  # type: ignore
+        bot = TelegramBot()
+        bot.send_draft_notification(
+            post_id=post_id or 0,
+            title=draft.get("title") or draft.get("keyword", "Untitled"),
+            keyword=draft.get("keyword", ""),
+        )
+        print("✅ Telegram 알림 전송 완료")
+    except Exception as exc:
+        print(f"ℹ️ Telegram 알림 건너뜀: {exc}")
 
 
 if __name__ == "__main__":
