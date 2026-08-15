@@ -50,10 +50,13 @@ function getDesc($kw){
 <?php foreach($trends as $t):
  $cat=$t['cat']??'전체';
  $kw=$t['keyword'];
- if(in_array($kw,["삼성전자","DL우","비트코인","ISA 계좌","예금 금리","금값","공모주","달러 환율","SK하이닉스","KODEX","테슬라","엔비디아","S&P500","나스닥","KOSPI","KOSDAQ","원유","채권","국고채","부동산","REITs","ETF","배당주"])) $cat="경제·금융";
- elseif(in_array($kw,["챗GPT","아이폰 16","유튜브","넷플릭스 신작","AI"])) $cat="IT·트렌드";
- elseif(in_array($kw,["날씨","로또 당첨번호","올림픽","유재석","뉴진스","KBO","나는 솔로","로제 아파트","오징어게임2"])) $cat="생활·연예";
- elseif(in_array($kw,["트럼프 관세"])) $cat="밈·이슈";
+ $src=$t['source']??'';
+ if(in_array($src,['base','Naver','Google','Reddit','X']) || empty($cat) || $cat==='전체'){
+   if(in_array($kw,["삼성전자","DL우","비트코인","ISA 계좌","예금 금리","금값","공모주","달러 환율","SK하이닉스","KODEX","테슬라","엔비디아","S&P500","나스닥","KOSPI","KOSDAQ","원유","채권","국고채","부동산","REITs","ETF","배당주"])) $cat="경제·금융";
+   elseif(in_array($kw,["챗GPT","아이폰 16","유튜브","넷플릭스 신작","AI"])) $cat="IT·트렌드";
+   elseif(in_array($kw,["날씨","로또 당첨번호","올림픽","유재석","뉴진스","KBO","나는 솔로","로제 아파트","오징어게임2"])) $cat="생활·연예";
+   elseif(in_array($kw,["트럼프 관세"])) $cat="밈·이슈";
+ }
  $desc=$t['description']??getDesc($kw);
  $isDown=strpos($t['change'],'-')!==false;
 ?>

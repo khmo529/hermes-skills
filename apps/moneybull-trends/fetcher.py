@@ -82,11 +82,12 @@ def get_all_popular():
                 trends.append({"rank":0,"keyword":f"#{tag}","change":f"+{random.uniform(10,50):.0f}%","badge":"LIVE","cat":"밈·이슈","source":"X","url":f"/?s={tag}","description":get_desc(tag)})
     except: pass
 
-    # E. 기존 KRX 금융도 3개는 유지 (블로그 금융글 키워드로 쓸 수 있게)
+    # E. 기존 KRX 금융도 유지 (블로그 금융글 키워드로 쓸 수 있게)
     try:
-        r=requests.get("https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:000215,005930", timeout=5)
+        r=requests.get("https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:000215,005930,000660,069500", timeout=5)
         if r.ok:
-            for d in r.json()['result']['areas'][0]['datas'][:2]:
+            items=r.json()['result']['areas'][0]['datas']
+            for d in items[:5]:
                 nm=d.get('nm','금')
                 nv=float(d.get('nv',0)); sv=float(d.get('sv',nv))
                 ch=((nv-sv)/sv*100) if sv else 0
