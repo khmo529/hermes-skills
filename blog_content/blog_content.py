@@ -6,9 +6,9 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-from seo.keyword_analyzer import analyze_keyword
-from seo.meta_generator import generate_seo_metadata
-from templates.government import render_government_template
+from blog_content.seo.keyword_analyzer import analyze_keyword
+from blog_content.seo.meta_generator import generate_seo_metadata
+from blog_content.templates.government import render_government_template
 
 
 @dataclass

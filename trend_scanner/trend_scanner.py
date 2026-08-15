@@ -13,8 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from sources import google_trends, gov24, moef, fsc
-from sources import naver_datalab
+from trend_scanner.sources import google_trends, gov24, moef, fsc
+from trend_scanner.sources import naver_datalab
 
 # ──────────────────────────────────────────────
 # CONFIG

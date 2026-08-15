@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from seo.keyword_analyzer import analyze_keyword
+from blog_content.seo.keyword_analyzer import analyze_keyword
 
 
 def _truncate(text: str, limit: int) -> str:
