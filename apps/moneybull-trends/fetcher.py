@@ -1,9 +1,20 @@
 import os, requests, random, re, time
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-load_dotenv('/home/hogh0608/htdocs/moneybull.co.kr/current-trends/.env')
-load_dotenv('/var/www/moneybull/current-trends/.env')
+def _load_dotenv(path: str):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip())
+    except Exception:
+        pass
+
+_load_dotenv('/home/hogh0608/htdocs/moneybull.co.kr/current-trends/.env')
+_load_dotenv('/var/www/moneybull/current-trends/.env')
 
 KST = datetime.now().astimezone().tzinfo
 OUT_FILE = __import__('pathlib').Path('/home/hogh0608/htdocs/moneybull.co.kr/wp-content/uploads/moneybull/trends.json')
