@@ -1,4 +1,4 @@
-import os, requests, random, re, time
+import os, requests, random, re, time, sys
 from datetime import datetime, timedelta
 
 def _load_dotenv(path: str):
@@ -79,7 +79,7 @@ def fetch_ncp_datalab():
         _jitter(0.5, 1.2)
         r = requests.post(url, headers=headers, json=body, timeout=10)
         if r.status_code != 200:
-            print(f"NCP Datalab failed {r.status_code} {r.text[:200]}")
+            print(f"NCP Datalab failed {r.status_code} {r.text[:200]}", file=sys.stderr)
             return []
         data = r.json()
         trends = []
@@ -91,7 +91,7 @@ def fetch_ncp_datalab():
                 trends.append({"keyword": g['title'], "change": f"{change:+.1f}%", "badge": badge, "cat": "전체", "source": "NCP Datalab"})
         return trends
     except Exception as e:
-        print(f"Datalab error {e}")
+        print(f"Datalab error {e}", file=sys.stderr)
         return []
 
 def fetch_reddit_x():
@@ -224,6 +224,10 @@ def collect():
     return payload
 
 def main():
+    cid = os.getenv('NAVER_CLOUD_CLIENT_ID') or os.getenv('NAVER_CLIENT_ID')
+    csec = os.getenv('NAVER_CLOUD_CLIENT_SECRET') or os.getenv('NAVER_CLIENT_SECRET')
+    use_ncp = os.getenv('NAVER_API_HUB') == 'true'
+    print(f"[ENV] NAVER_API_HUB={use_ncp} client_id={'set' if cid else 'missing'} secret={'set' if csec else 'missing'}", file=sys.stderr)
     print(__import__('json').dumps(collect(), ensure_ascii=False, indent=2))
     return 0
 
