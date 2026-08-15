@@ -154,9 +154,93 @@ def _fallback_template(keyword: str, category: str) -> str:
         return render_government_template(keyword=keyword, analysis={}, experience_notes="")
     if category in {"절세", "세금", "tax"}:
         return render_tax_template(keyword=keyword, analysis={}, experience_notes="")
-    if category in {"finance", "금융", "주식", "부동산", "코인", "투자"}:
+    if category in {"finance", "금융", "주식", "부동산", "코인", "투자", "환율", "경제정책", "moneybull"}:
         return render_finance_template(keyword=keyword, analysis={}, experience_notes="")
-    return "<p>MoneyBull 규칙 기반 초안을 생성하려면 AI API 키가 필요합니다.</p>"
+    return render_finance_template(keyword=keyword, analysis={}, experience_notes="")
+
+
+def _generate_slug(keyword: str, title: str) -> str:
+    category_slugs = {
+        "tax": "tax",
+        "tax-saving": "tax-saving",
+        "cryptocurrency": "coin",
+        "stock": "stock",
+        "real-estate": "real-estate",
+        "pension": "pension",
+        "forex": "exchange-rate",
+        "credit-card": "card",
+        "government-policy": "policy",
+        "account": "account",
+        "finance": "finance",
+    }
+    base = category_slugs.get(_auto_category(keyword), "guide")
+    keyword_map = {
+        "코인": "coin", "세금": "tax", "신고": "report",
+        "절세": "tax-saving", "IRP": "irp", "환율": "exchange-rate",
+        "주식": "stock", "부동산": "real-estate", "연금": "pension",
+        "카드": "card",
+    }
+    extras = []
+    for k, v in keyword_map.items():
+        if (k in keyword or k in title) and v != base and v not in extras:
+            extras.append(v)
+    parts = [base] + extras[:2]
+    return "-".join(parts)
+
+
+def _auto_category(keyword: str) -> str:
+    keyword_to_category = {
+        "코인": "cryptocurrency", "주식": "stock", "부동산": "real-estate",
+        "IRP": "pension", "연금": "pension", "세금": "tax", "절세": "tax",
+        "환율": "forex", "카드": "credit-card", "지원금": "government-policy",
+        "계좌": "account",
+    }
+    for k, v in keyword_to_category.items():
+        if k in keyword:
+            return v
+    return "finance"
+
+
+def _generate_tags(keyword: str, title: str) -> list[str]:
+    base_tags = ["재테크", "돈벌이", "금융", "투자", "절약"]
+    keyword_map = {
+        "코인": ["코인", "암호화폐", "가상화폐", "비트코인"],
+        "세금": ["세금", "소득세", "양도세", "종합소득세"],
+        "IRP": ["IRP", "연금저축", "퇴직연금"],
+        "환율": ["환율", "달러", "원화", "외환"],
+        "주식": ["주식", "배당", "ETF"],
+    }
+    keyword_tags = []
+    for k, tags in keyword_map.items():
+        if k in keyword or k in title:
+            keyword_tags.extend(tags)
+    all_tags = list(dict.fromkeys(keyword_tags + base_tags))
+    return all_tags[:12]
+
+
+def _generate_meta(keyword: str, title: str, content: str) -> dict[str, str]:
+    focus = keyword.strip()
+    seo_title = title[:57] + "..." if len(title) > 60 else title
+    text = re.sub(r"<[^>]+>", "", content)
+    first_sentence = text.split(".")[0][:150]
+    seo_description = first_sentence + "..." if len(first_sentence) > 140 else first_sentence
+    return {
+        "focus_keyword": focus,
+        "seo_title": seo_title,
+        "seo_description": seo_description,
+        "rank_math_focus_keyword": focus,
+        "rank_math_title": seo_title,
+        "rank_math_description": seo_description,
+        "_yoast_wpseo_focuskw": focus,
+        "_yoast_wpseo_title": seo_title,
+        "_yoast_wpseo_metadesc": seo_description,
+    }
+
+
+def _check_length(html: str) -> bool:
+    text = re.sub(r"<[^>]+>", "", html)
+    length = len(text.strip())
+    return 1500 <= length <= 2500
 
 
 def _ensure_dir(path: Path) -> None:
@@ -192,6 +276,13 @@ def generate_draft(item: Dict[str, Any]) -> Dict[str, Any]:
         meta_block = ""
 
     title = _extract_title_from_html(content) or f"2026 {keyword} 신청 자격 및 방법 | 한눈에 보기"
+    auto_cat = _auto_category(keyword)
+    category = category or auto_cat
+    slug = _generate_slug(keyword, title)
+    tags = _generate_tags(keyword, title)
+    generated_meta = _generate_meta(keyword, title, content)
+    plain_length = len(re.sub(r"<[^>]+>", "", content).strip())
+    length_ok = _check_length(content)
     meta = {
         "focus_keyword": keyword,
         "category": category,
@@ -199,6 +290,18 @@ def generate_draft(item: Dict[str, Any]) -> Dict[str, Any]:
         "cpc_band": analysis.get("cpc_band"),
         "meta_block": meta_block,
         "trend": trend,
+        "slug": slug,
+        "tags": tags,
+        "seo_title": generated_meta["seo_title"],
+        "seo_description": generated_meta["seo_description"],
+        "rank_math_focus_keyword": generated_meta["rank_math_focus_keyword"],
+        "rank_math_title": generated_meta["rank_math_title"],
+        "rank_math_description": generated_meta["rank_math_description"],
+        "_yoast_wpseo_focuskw": generated_meta["_yoast_wpseo_focuskw"],
+        "_yoast_wpseo_title": generated_meta["_yoast_wpseo_title"],
+        "_yoast_wpseo_metadesc": generated_meta["_yoast_wpseo_metadesc"],
+        "plain_length": plain_length,
+        "length_ok": length_ok,
     }
 
     return {

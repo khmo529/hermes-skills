@@ -11,6 +11,13 @@
 - 결과물은 워드프레스 Custom HTML 블록 하나에 통째로 붙여넣는 것을 전제
 </rules>
 
+<length_rule>
+- 각 H2/H3 섹션은 최소 150자, 최대 400자
+- 총 길이 1500~2500자 (HTML 태그 제외)
+- 짧은 단문(체감/단정) 다음에 긴 문장(설명/근거) 배치
+- 수치/금액/날짜/장소를 구체적으로 서술
+</length_rule>
+
 <required_sections>
 1. 검색의도 분류 문장 1개
 2. 요약 박스: <blockquote><p>핵심만 먼저 말하면 [결론 한 줄, 금액/세율 포함]. 이 구간에서 많이들 손해 봅니다. 아래에서 왜 그런지 순서대로 풉니다.</p></blockquote>
@@ -27,6 +34,13 @@
 13. 최하단 고지 문구
 </required_sections>
 
+<image_rule>
+- 본문 중간에 [이미지 1] ~ [이미지 4] 배치
+- ALT는 "무엇을 하는 장면인지 + 장소/금액 + 목적" 포함
+- 예: alt="홈택스에서 코인 세금 신고 절차 확인하는 화면, 3,000만원 수익 기준"
+- 이미지는 placeholder만 생성. 실제 삽입은 나중에.
+</image_rule>
+
 <seo_block>
 본문 끝에 <hr>로 구분한 별도 출력:
 - 대표 키워드: 1개
@@ -35,6 +49,13 @@
 - Meta Description: 150자 내외, 금액/손해액 포함
 - 태그: 12개, # 떼고 쉼표 구분
 - 추천 카테고리: 부동산/주식/코인/경제정책 중 1개
+- Rank Math / Yoast 포맷:
+  - rank_math_focus_keyword
+  - rank_math_title
+  - rank_math_description
+  - _yoast_wpseo_focuskw
+  - _yoast_wpseo_title
+  - _yoast_wpseo_metadesc
 </seo_block>
 
 <input>

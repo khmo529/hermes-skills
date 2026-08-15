@@ -17,6 +17,7 @@ def render_tax_template(
     )
     latest = "2025-01-01"
     legal_ref = "소득세법 제○○조 / 지방세법 제○○조"
+    tip = "여기서 갈리면 수백만 원 차이 납니다."
 
     return "\n".join(
         [
@@ -25,9 +26,10 @@ def render_tax_template(
             "<blockquote><p>" + summary + "</p></blockquote>",
             "",
             f"<p>이 글은 {latest} 기준, {legal_ref} 기준으로 작성됐습니다.</p>",
+            "[이미지 1]",
             "",
             "<h3>절세 구조</h3>",
-            "<p>가장 먼저 확인할 것은 신고 대상 여부입니다.</p>",
+            "<p>가장 먼저 확인할 것은 신고 대상 여부입니다. 소득 구간에 따라 적용되는 공제 항목이 달라지므로, 홈택스 기준표를 먼저 확인하세요.</p>",
             "",
             "<h3>단계별 절차</h3>",
             "<ol>",
@@ -45,8 +47,17 @@ def render_tax_template(
             "<tr><td>예시 2</td><td>5,000,000원</td><td>3,500,000원</td><td>1,500,000원</td><td>지방세법 제○○조</td></tr>",
             "</tbody>",
             "</table>",
+            "[이미지 2]",
             "",
-            "<blockquote><p>현장에서 보면 여기서 갈립니다. 공제 요건 하나 누르면 수백만 원 차이 납니다.</p></blockquote>",
+            "<blockquote><p>" + tip + "</p></blockquote>",
+            "",
+            "<h3>체크리스트</h3>",
+            "<ul>",
+            "<li>홈택스 로그인 및 소득 내역 확인</li>",
+            "<li>공제 항목 누락 여부 확인</li>",
+            "<li>증빙 서류 스캔/촬영</li>",
+            "<li>신고 마감일 확인</li>",
+            "</ul>",
             "",
             "<h3>자주 묻는 질문</h3>",
             f"<p><strong>Q. {keyword} 신고 시 가장 먼저 확인해야 할 서류는?</strong></p>",
