@@ -88,7 +88,7 @@ def fetch_ncp_datalab():
             if len(ratios) >= 2:
                 change = ((ratios[-1]['ratio'] - ratios[0]['ratio']) / max(1, ratios[0]['ratio']) * 100)
                 badge = "🔥 급상승" if change > 10 else ("NEW" if change > 5 else "LIVE")
-                trends.append({"keyword": g['title'], "change": f"{change:+.1f}%", "badge": badge, "cat": "전체", "source": "NCP Datalab"})
+                trends.append({"keyword": g['title'], "change": f"{change:+.1f}%", "badge": badge, "cat": "전체", "source": "NCP"})
         return trends
     except Exception as e:
         print(f"Datalab error {e}", file=sys.stderr)
@@ -104,31 +104,56 @@ def fetch_reddit_x():
                 title = child.get('data', {}).get('title', '')
                 if not title:
                     continue
+                score = child.get('data', {}).get('score', 0)
+                change = (score / 100.0)
+                change = max(-15.0, min(15.0, change))
                 cleaned = re.sub(r'[^\w\s]', '', title)
                 words = [w for w in cleaned.split() if len(w) > 3]
                 if words:
                     kw = _translate_to_korean(max(words, key=len))
-                    trends.append({"keyword": kw, "change": "+0%", "badge": "X", "cat": "달러·주식", "source": "Reddit"})
+                    trends.append({"keyword": kw, "change": f"{change:+.1f}%", "badge": "X", "cat": "달러·주식", "source": "Reddit"})
     except Exception as e:
-        print(f"Reddit error {e}")
+        print(f"Reddit error {e}", file=sys.stderr)
     return trends[:5]
 
 def fetch_krx_rates():
+    out = []
     try:
         _jitter(0.3, 0.9)
-        r = requests.get("https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:000215", timeout=8)
+        r = requests.get("https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:000215,005930,000660,069500", timeout=8)
         if r.status_code == 200:
-            return {"gold": r.json()}
+            data = r.json()
+            for item in data.get('result', {}).get('areas', [{}])[0].get('datas', []):
+                code = item.get('cd')
+                name = item.get('nm', '')
+                nv = item.get('nv')
+                sv = item.get('sv')
+                if not nv or not sv:
+                    continue
+                try:
+                    change = ((float(nv) - float(sv)) / float(sv) * 100)
+                except Exception:
+                    continue
+                label = "stable"
+                if change >= 20:
+                    label = "up"
+                elif change <= -15:
+                    label = "down"
+                elif 5 < change < 20:
+                    label = "new"
+                cat = "금리·금값"
+                if code in ('005930', '000660', '069500'):
+                    cat = "달러·주식"
+                out.append({
+                    "keyword": name,
+                    "change": f"{change:+.2f}%",
+                    "badge": "KRX",
+                    "cat": cat,
+                    "source": "KRX",
+                })
     except Exception as e:
-        print(f"[KRX] gold error: {e}")
-    try:
-        _jitter(0.3, 0.9)
-        r = requests.get("https://m.stock.naver.com/api/stocks/finance/marketIndex", timeout=8)
-        if r.status_code == 200:
-            return {"fx": r.json()}
-    except Exception as e:
-        print(f"[KRX] fx error: {e}")
-    return {}
+        print(f"[KRX] error: {e}", file=sys.stderr)
+    return out
 
 def _inject_related_posts(keywords, limit=3):
     return [{"title": f"{kw} 최신 동향", "url": f"/?s={requests.utils.quote(kw)}"} for kw in keywords[:limit]]
@@ -156,12 +181,12 @@ def collect():
             if not kw or kw in seen:
                 continue
             seen.add(kw)
-            candidates.append(kw)
+            candidates.append(item)
 
-    for item in ncp + reddit:
+    for item in ncp + reddit + krx:
         add_unique([item])
 
-    ranked_kw = candidates[:20]
+    ranked = candidates[:20]
     finance_keywords = []
     FINANCE_TOKENS = [
         "ISA", "ISA계좌", "금", "금값", "달러", "환율", "예금", "적금", "주식", "코인",
@@ -169,45 +194,62 @@ def collect():
         "금 투자", "KRX", "국고채", "채권", "펀드", "보험", "카드", "은행", "증권", "ETF",
         "배당주", "리츠", "REITs", "원유", "원자재", "금융", "투자", "저축", "연금",
         "부동산", "부동산 투자", "전세", "월세", "주담대", "디딤돌", "보금자리",
-        "엔비디아", "테슬라", "애플", "나스닥", "S&P500",
+        "엔비디아", "테슬라", "애플", "나스닥", "S&P500", "삼성전자", "SK하이닉스", "KODEX200",
     ]
-    for kw in ranked_kw:
+    for item in ranked:
+        kw = str(item.get('keyword', '')).strip()
         for token in FINANCE_TOKENS:
             if token.lower() in kw.lower():
-                finance_keywords.append(kw)
+                finance_keywords.append(item)
                 break
 
     merged = []
-    for i, kw in enumerate(finance_keywords[:15], start=1):
-        change_pct = 25.0 if i <= 2 else (18.0 if i <= 5 else (-6.0 if i > 10 else 0.0))
-        label = "up" if change_pct >= 20 else ("new" if i <= 3 else "stable")
+    for i, item in enumerate(finance_keywords[:15], start=1):
+        change_str = str(item.get('change', '0.00%'))
+        change_pct = 0.0
+        try:
+            change_pct = float(change_str.replace('%', '').replace('+', ''))
+        except Exception:
+            change_pct = 0.0
+        label = "stable"
+        if change_pct >= 20:
+            label = "up"
+        elif change_pct <= -15:
+            label = "down"
+        elif 5 < change_pct < 20:
+            label = "new"
         merged.append({
-            "keyword": kw,
-            "category": "금융",
+            "keyword": item.get('keyword'),
+            "category": item.get('cat', '금융'),
             "rank": i,
             "score": 100 - i * 7,
             "change_pct": change_pct,
+            "change": change_str,
             "label": label,
             "meta": {"fire": True if change_pct >= 20 else {}},
-            "related_posts": _inject_related_posts([kw]),
+            "related_posts": _inject_related_posts([item.get('keyword', '')]),
             "updated_at": datetime.now(KST).isoformat(),
+            "source": item.get('source', 'KRX'),
+            "url": item.get('url', '/?s=' + requests.utils.quote(item.get('keyword', ''))),
         })
 
     if not merged:
         base = [
-            ("ISA 계좌", 25.0, "up"), ("예금 금리", 18.0, "new"), ("금값", 15.0, "new"),
-            ("달러 환율", -6.0, "stable"), ("미국 주식", 8.0, "stable"), ("삼성전자", 5.0, "stable"),
-            ("예적금 추천", 22.0, "up"), ("청년 ISA", 28.0, "up"), ("금 투자", 12.0, "new"),
-            ("S&P500", 9.0, "stable"), ("비트코인", -8.0, "stable"), ("주택담보대출 금리", 20.0, "up"),
-            ("IRP 계좌", 14.0, "stable"), ("ISA 비과세", 24.0, "up"), ("달러 투자", 7.0, "stable"),
+            ("ISA 계좌", 2.3, "up"), ("예금 금리", 0.8, "new"), ("금값", 1.2, "new"),
+            ("달러 환율", -0.5, "stable"), ("미국 주식", 1.5, "stable"), ("삼성전자", 0.9, "stable"),
+            ("예적금 추천", 1.8, "up"), ("청년 ISA", 2.8, "up"), ("금 투자", 1.1, "new"),
+            ("S&P500", 1.3, "stable"), ("비트코인", -1.2, "stable"), ("주택담보대출 금리", 1.6, "up"),
+            ("IRP 계좌", 1.0, "stable"), ("ISA 비과세", 2.1, "up"), ("달러 투자", 0.7, "stable"),
         ]
         for i, (kw, change_pct, label) in enumerate(base, start=1):
             merged.append({
                 "keyword": kw, "category": "금융", "rank": i, "score": 100 - i * 7,
-                "change_pct": change_pct, "label": label,
+                "change_pct": change_pct, "change": f"{change_pct:+.2f}%", "label": label,
                 "meta": {"fire": True if change_pct >= 20 else {}},
                 "related_posts": _inject_related_posts([kw]),
                 "updated_at": datetime.now(KST).isoformat(),
+                "source": "KRX",
+                "url": '/?s=' + requests.utils.quote(kw),
             })
 
     payload = {
@@ -215,7 +257,6 @@ def collect():
         "updated_at": datetime.now(KST).isoformat(),
         "count": len(merged),
         "trends": merged,
-        "market": krx,
     }
     try:
         OUT_FILE.write_text(__import__('json').dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
