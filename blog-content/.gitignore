@@ -1,0 +1,13 @@
+output/
+__pycache__/
+*.pyc
+*.md.bak
+*.json.bak
+.env
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.DS_Store
+Thumbs.db
