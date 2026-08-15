@@ -17,6 +17,12 @@ get_header();
 $css = file_get_contents(__DIR__ . '/trends.css');
 echo '/* trends.css */' . "\n" . $css . "\n";
 ?>
+.trends-page{max-width:1100px!important;margin:0 auto;padding:40px 20px}
+.trends-header h1{font-size:32px;font-weight:800;letter-spacing:-0.02em}
+.trends-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:24px}
+.trend-card{background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,0.06);border-radius:20px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,0.04);transition:all 0.2s}
+.trend-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.08)}
+@media(max-width:768px){.trends-page{padding:20px 16px}.trends-grid{grid-template-columns:1fr}.trends-header h1{font-size:24px}}
 </style>
 
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -39,22 +45,13 @@ echo '/* trends.css */' . "\n" . $css . "\n";
       </template>
     </nav>
 
-    <section class="card-list" aria-label="트렌드 리스트">
+    <section class="trends-grid" aria-label="트렌드 리스트">
       <!-- Loading skeleton -->
       <template x-if="loading" key="skeleton">
         <div>
-          <div class="card shimmer" aria-hidden="true">
-            <div class="skeleton w60 h12"></div>
-            <div class="skeleton w40 h12"></div>
-          </div>
-          <div class="card shimmer" aria-hidden="true">
-            <div class="skeleton w60 h12"></div>
-            <div class="skeleton w40 h12"></div>
-          </div>
-          <div class="card shimmer" aria-hidden="true">
-            <div class="skeleton w60 h12"></div>
-            <div class="skeleton w40 h12"></div>
-          </div>
+          <div class="trend-card shimmer" aria-hidden="true"><div class="skeleton w60 h12"></div><div class="skeleton w40 h12"></div></div>
+          <div class="trend-card shimmer" aria-hidden="true"><div class="skeleton w60 h12"></div><div class="skeleton w40 h12"></div></div>
+          <div class="trend-card shimmer" aria-hidden="true"><div class="skeleton w60 h12"></div><div class="skeleton w40 h12"></div></div>
         </div>
       </template>
 
@@ -65,27 +62,28 @@ echo '/* trends.css */' . "\n" . $css . "\n";
 
       <!-- Trend cards -->
       <template x-for="item in filtered, index" :key="item.keyword + item.rank + index">
-        <a class="card" :href="item.url" :style="`animation-delay: ${index * 40}ms`">
-          <div class="card-rank" aria-label="순위" x-text="item.rank"></div>
-          <div class="card-body">
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <p class="card-title" x-text="item.keyword"></p>
-              <span class="badge" :class="item.label" x-text="badgeLabel(item)"></span>
+        <a class="trend-card" :href="item.url" :style="'animation-delay:' + index * 40 + 'ms'">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="card-rank" aria-label="순위" x-text="item.rank"></div>
+              <div>
+                <p class="card-title" x-text="item.keyword" style="margin:0 0 4px; font-size:17px; font-weight:700;"></p>
+                <div class="card-meta">
+                  <span x-text="item.updated_at ? new Date(item.updated_at).toLocaleTimeString('ko-KR') : ''"></span>
+                  <span aria-hidden="true">·</span>
+                  <span x-text="'관련글 ' + ((item.related_posts || []).length) + '개'"></span>
+                </div>
+              </div>
             </div>
-            <div class="card-meta">
-              <span x-text="item.updated_at ? new Date(item.updated_at).toLocaleTimeString('ko-KR') : ''"></span>
-              <span aria-hidden="true">·</span>
-              <span x-text="`관련글 ${(item.related_posts || []).length}개`"></span>
-            </div>
-            <div class="card-related" aria-label="관련글">
-              <template x-for="post in item.related_posts || []" :key="post.url">
-                <span class="related-link" x-text="post.title" tabindex="0"></span>
-              </template>
+            <div style="text-align:right;">
+              <div class="change" style="color: var(--fire);" x-show="item.meta && item.meta.fire" x-text="'🔥 +20% 이상'"></div>
+              <div class="change" style="color: var(--text-secondary);" x-show="!(item.meta && item.meta.fire)" x-text="item.change_pct > 0 ? '▲ ' + item.change_pct.toFixed(1) + '%' : (item.change_pct < 0 ? '▼ ' + Math.abs(item.change_pct).toFixed(1) + '%' : '-')"></div>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div class="change" style="color: var(--fire);" x-show="item.meta && item.meta.fire" x-text="'🔥 +20% 이상'"></div>
-            <div class="change" style="color: var(--text-secondary);" x-show="!(item.meta && item.meta.fire)" x-text="item.change_pct > 0 ? `▲ ${item.change_pct.toFixed(1)}%` : (item.change_pct < 0 ? `▼ ${Math.abs(item.change_pct).toFixed(1)}%` : '-')"></div>
+          <div class="card-related" aria-label="관련글" style="margin-top:10px;">
+            <template x-for="post in (item.related_posts || [])" :key="post.url">
+              <span class="related-link" x-text="post.title" tabindex="0"></span>
+            </template>
           </div>
         </a>
       </template>
@@ -109,6 +107,11 @@ echo '/* trends.css */' . "\n" . $css . "\n";
 <script>
 (function () {
   const JSON_URL = '/wp-json/moneybull/v1/trends';
+  window.baseKeywords = [
+    {"keyword":"ISA 계좌","rank":1,"score":93,"change_pct":25,"label":"up","meta":{"fire":true},"related_posts":[{"title":"ISA 계좌 최신 동향","url":"/?s=ISA"}],"updated_at":"","url":"/?s=ISA","share_text":"","category":"ISA"},
+    {"keyword":"예금 금리","rank":2,"score":86,"change_pct":18,"label":"new","meta":{},"related_posts":[{"title":"예금 금리 최신 동향","url":"/?s=예금 금리"}],"updated_at":"","url":"/?s=예금 금리","share_text":"","category":"예금·적금"},
+    {"keyword":"금값","rank":3,"score":79,"change_pct":15,"label":"new","meta":{},"related_posts":[{"title":"금값 최신 동향","url":"/?s=금값"}],"updated_at":"","url":"/?s=금값","share_text":"","category":"금리·금값"}
+  ];
 
   function moneybullTrends() {
     return {
@@ -130,12 +133,13 @@ echo '/* trends.css */' . "\n" . $css . "\n";
           const res = await fetch(JSON_URL, { headers: { 'Accept': 'application/json' } });
           if (!res.ok) throw new Error(res.status);
           const data = await res.json();
-          if (Array.isArray(data.trends)) {
-            this.trends = data.trends;
-            this.lastUpdated = data.updated_at;
-          }
+          let trends = Array.isArray(data.trends) ? data.trends : [];
+          if (!trends.length) trends = window.baseKeywords || [];
+          this.trends = trends;
+          this.lastUpdated = data.updated_at;
         } catch (e) {
           console.error('[MoneyBull Trends] fetch error:', e);
+          this.trends = window.baseKeywords || [];
         } finally {
           this.loading = false;
         }

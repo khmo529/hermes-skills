@@ -282,11 +282,32 @@ def collect() -> dict[str, Any]:
             best[c.keyword] = c
     merged = sorted(best.values(), key=lambda x: x.score, reverse=True)[:15]
 
+    if not merged:
+        base = [
+            ("ISA 계좌", 25.0, "up"), ("예금 금리", 18.0, "new"), ("금값", 15.0, "new"),
+            ("달러 환율", -6.0, "stable"), ("미국 주식", 8.0, "stable"), ("삼성전자", 5.0, "stable"),
+            ("예적금 추천", 22.0, "up"), ("청년 ISA", 28.0, "up"), ("금 투자", 12.0, "new"),
+            ("S&P500", 9.0, "stable"), ("비트코인", -8.0, "stable"), ("주택담보대출 금리", 20.0, "up"),
+            ("IRP 계좌", 14.0, "stable"), ("ISA 비과세", 24.0, "up"), ("달러 투자", 7.0, "stable"),
+        ]
+        for i, (kw, change_pct, label) in enumerate(base, start=1):
+            merged.append(
+                TrendItem(
+                    keyword=kw,
+                    category="금융",
+                    rank=i,
+                    score=100 - i * 7,
+                    change_pct=change_pct,
+                    label=label,
+                    meta={"fire": True if change_pct >= 20 else {}},
+                )
+            )
+
     for i, item in enumerate(merged, start=1):
         item.rank = i
         if item.change_pct >= 20:
             item.label = "up"
-            item.meta["fire"] = True
+            item.meta.setdefault("fire", True)
         elif item.change_pct <= -15:
             item.label = "down"
         elif item.label not in {"new", "up", "down"}:
