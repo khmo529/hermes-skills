@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from blog_content.seo.keyword_analyzer import analyze_keyword
+from blog_content.templates.finance import render_finance_template
 from blog_content.templates.government import render_government_template
+from blog_content.templates.tax import render_tax_template
 
 
 @dataclass
@@ -97,21 +99,41 @@ def _call_ai(prompt: str) -> str:
 
 
 def _quality_check(content: str) -> str:
-    banned = [
-        "첫째,", "둘째,", "결론적으로", "~인 것이죠", "~셈입니다", "알아보겠습니다",
-        "말씀드리겠습니다", "라고 할 수 있습니다", "생각해볼 필요가 있습니다", "대박", "무조건", "필수", "100%",
+    blocked_patterns = [
+        (r"<!--\s*wp:", "wp 블록 주석"),
+        (r"\bclass\s*=", "class 속성"),
+        (r"\bstyle\s*=", "style 속성"),
+        (r"colspan", "colspan 속성"),
+        (r"rowspan", "rowspan 속성"),
+        (r"첫째,", "금지 문구: 첫째"),
+        (r"둘째,", "금지 문구: 둘째"),
+        (r"결론적으로", "금지 문구: 결론적으로"),
+        (r"~인 것이죠", "금지 문구: ~인 것이죠"),
+        (r"~셈입니다", "금지 문구: ~셈입니다"),
+        (r"알아보겠습니다", "금지 문구: 알아보겠습니다"),
+        (r"말씀드리겠습니다", "금지 문구: 말씀드리겠습니다"),
+        (r"라고 할 수 있습니다", "금지 문구: ~라고 할 수 있습니다"),
+        (r"생각해볼 필요가 있습니다", "금지 문구: 생각해볼 필요가 있습니다"),
+        (r"대박", "금지 문구: 대박"),
+        (r"무조건", "금지 문구: 무조건"),
+        (r"필수", "금지 문구: 필수"),
+        (r"100%", "금지 문구: 100%"),
+    ]
+    required_patterns = [
+        (r"<blockquote", "요약 박스(blockquote)"),
+        (r"<table", "시뮬레이션/비교 테이블"),
+        (r"<hr", "SEO 메타데이터 구분자(<hr>)"),
     ]
     lower = content.lower()
-    found = [b for b in banned if b in lower]
-    if found:
-        raise RuntimeError(f"금지 문구 발견: {found}")
-
-    if "blockquote" not in content.lower() and "<blockquote" not in content.lower():
-        raise RuntimeError("요약 박스(blockquote)가 없습니다.")
-    if "<table" not in content.lower():
-        raise RuntimeError("시뮬레이션/비교 테이블이 없습니다.")
-    if "<hr>" not in content:
-        raise RuntimeError("SEO 메타데이터 구분자(<hr>)가 없습니다.")
+    found = [name for pat, name in blocked_patterns if re.search(pat, lower)]
+    missing = [name for pat, name in required_patterns if not re.search(pat, lower)]
+    if found or missing:
+        msgs = []
+        if found:
+            msgs.append("BLOCKED: " + ", ".join(found))
+        if missing:
+            msgs.append("MISSING: " + ", ".join(missing))
+        raise RuntimeError(" | ".join(msgs))
     return content
 
 
@@ -123,8 +145,12 @@ def _split_content(checked: str) -> Dict[str, str]:
 
 
 def _fallback_template(keyword: str, category: str) -> str:
-    if category in {"정부지원금", "정책", "청년정책", "절세", "세금"}:
+    if category in {"정부지원금", "정책", "청년정책", "government"}:
         return render_government_template(keyword=keyword, analysis={}, experience_notes="")
+    if category in {"절세", "세금", "tax"}:
+        return render_tax_template(keyword=keyword, analysis={}, experience_notes="")
+    if category in {"finance", "금융", "주식", "부동산", "코인", "투자"}:
+        return render_finance_template(keyword=keyword, analysis={}, experience_notes="")
     return "<p>MoneyBull 규칙 기반 초안을 생성하려면 AI API 키가 필요합니다.</p>"
 
 

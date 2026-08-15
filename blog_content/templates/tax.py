@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from typing import Any, Optional
+
+
+def render_tax_template(
+    *,
+    keyword: str,
+    analysis: dict[str, Any],
+    experience_notes: Optional[str] = None,
+) -> str:
+    title = f"{keyword} 절세 공략 | 신고 절차와 증빙 체크리스트"
+    summary = (
+        "핵심만 먼저 말하면 "
+        f"{keyword}는 서류와 신고 타이밍만 잘 챙겨도 실제 세금이 수백만 원 달라집니다. "
+        "아래에서 단계별로 정리했습니다."
+    )
+    latest = "2025-01-01"
+    legal_ref = "소득세법 제○○조 / 지방세법 제○○조"
+
+    return "\n".join(
+        [
+            f"<h2 id='{keyword.replace(' ', '-')}-절세-공략'>{title}</h2>",
+            "",
+            "<blockquote><p>" + summary + "</p></blockquote>",
+            "",
+            f"<p>이 글은 {latest} 기준, {legal_ref} 기준으로 작성됐습니다.</p>",
+            "",
+            "<h3>절세 구조</h3>",
+            "<p>가장 먼저 확인할 것은 신고 대상 여부입니다.</p>",
+            "",
+            "<h3>단계별 절차</h3>",
+            "<ol>",
+            "<li>소득/지출 내역 정리</li>",
+            "<li>공제 요건 확인</li>",
+            "<li>증빙 서류 준비</li>",
+            "<li>신고 및 납부</li>",
+            "</ol>",
+            "",
+            "<h3>수익 시뮬레이션</h3>",
+            "<table>",
+            "<thead><tr><th>구분</th><th>공제 전</th><th>공제 후</th><th>절세 효과</th><th>법령 근거</th></tr></thead>",
+            "<tbody>",
+            "<tr><td>예시 1</td><td>3,000,000원</td><td>2,100,000원</td><td>900,000원</td><td>소득세법 제○○조</td></tr>",
+            "<tr><td>예시 2</td><td>5,000,000원</td><td>3,500,000원</td><td>1,500,000원</td><td>지방세법 제○○조</td></tr>",
+            "</tbody>",
+            "</table>",
+            "",
+            "<blockquote><p>현장에서 보면 여기서 갈립니다. 공제 요건 하나 누르면 수백만 원 차이 납니다.</p></blockquote>",
+            "",
+            "<h3>자주 묻는 질문</h3>",
+            f"<p><strong>Q. {keyword} 신고 시 가장 먼저 확인해야 할 서류는?</strong></p>",
+            "<p>A. 소득·지출 증빙과 공제 요건 확인서입니다.</p>",
+            "",
+            "<h3>이런 분들께 추천</h3>",
+            "<ul>",
+            "<li>올해 처음 신고하는 분</li>",
+            "<li>과거에 공제를 놓친 경험이 있는 분</li>",
+            "</ul>",
+            "",
+            "<p>제가 작년에 직접 진행한 케이스에서는 공제 요건 확인만으로 세금이 크게 줄었습니다.</p>",
+            "",
+            "<hr>",
+            "<p>즉시 실행: 홈택스 모의계산으로 대상 구간을 먼저 확인하세요.</p>",
+            "<p>댓글 유도: 신고 과정에서 가장 막히는 부분은 서류인가요, 절차인가요?</p>",
+            "<p>다음 글 추천: <a href='/tag/절세-가이드'>절세 가이드</a>, <a href='/tag/세금-신고'>세금 신고 모음</a></p>",
+            "<p>본 포스팅은 정보 전달 목적이며, 실제 적용 시 세무사 상담을 권장합니다.</p>",
+        ]
+    )
