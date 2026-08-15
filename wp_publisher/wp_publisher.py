@@ -228,6 +228,7 @@ class WPPublisher:
         excerpt: Optional[str] = None,
         featured_media: int = 0,
         content_blocks: Optional[List[Dict[str, Any]]] = None,
+        meta: Optional[Dict[str, Any]] = None,
     ) -> int:
         cat_id = _get_category_id(category or DEFAULT_CATEGORY)
         if cat_id is None:
@@ -246,7 +247,7 @@ class WPPublisher:
         if content_blocks:
             raw_content = _blocks_to_html(content_blocks)
 
-        payload = {
+        payload: Dict[str, Any] = {
             "title": title,
             "content": raw_content,
             "status": status,
@@ -256,6 +257,8 @@ class WPPublisher:
         }
         if excerpt:
             payload["excerpt"] = excerpt
+        if meta:
+            payload["meta"] = meta
 
         r = requests.post(
             _api_path("posts"),

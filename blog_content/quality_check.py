@@ -32,6 +32,12 @@ BLOCKED_PATTERNS = [
     (r"무조건", "금지 문구: 무조건"),
     (r"필수", "금지 문구: 필수"),
     (r"100%", "금지 문구: 100%"),
+    (r"OO%", "YMYL 플레이스홀더: OO%"),
+    (r"OO만원", "YMYL 플레이스홀더: OO만원"),
+    (r"상품 A", "YMYL 플레이스홀더: 상품 A/B"),
+    (r"상품 B", "YMYL 플레이스홀더: 상품 A/B"),
+    (r"예시\d", "YMYL 플레이스홀더: 예시N"),
+    (r"약\s*\d*\s*만원", "YMYL 플레이스홀더: 약 N만원"),
 ]
 REQUIRED_PATTERNS = [
     (r"<blockquote", "요약 박스(blockquote)"),
