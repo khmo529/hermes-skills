@@ -30,10 +30,10 @@ def get_all_popular():
                     try:
                         num=int(traffic.replace('K+','').replace(',',''))
                         change=f"+{num}%"
-                    except: pass
+                    except Exception as e: pass
                 trends.append({"rank":0,"keyword":kw,"change":change,"badge":"🔥 인기","cat":"전체","source":"Google","url":f"/?s={kw}"})
     except Exception as e:
-        print(f"Google error {e}")
+        print(f"Google error {e}", __import__("sys").stderr)
 
     # B. Reddit r/popular + r/all 핫
     try:
@@ -45,7 +45,7 @@ def get_all_popular():
                 kw=title[:15].strip()
                 if len(kw)>2 and kw not in [t['keyword'] for t in trends]:
                     trends.append({"rank":0,"keyword":kw,"change":f"+{random.uniform(3,15):.1f}%","badge":"NEW","cat":"밈·이슈","source":"Reddit","url":f"/?s={kw}"})
-    except: pass
+    except Exception as e: pass
 
     # C. Naver Most Searched 대체 - Naver DataLab 쇼핑인사이트 + 금융 합쳐서 인기검색어 느낌
     try:
@@ -54,7 +54,7 @@ def get_all_popular():
         for kw in kws:
             if kw not in [t['keyword'] for t in trends]:
                 trends.append({"rank":0,"keyword":kw,"change":f"+{random.uniform(5,20):.0f}%","badge":"급상승","cat":"전체","source":"Naver","url":f"/?s={kw}"})
-    except: pass
+    except Exception as e: pass
 
     # D. X.com 트렌드 대체 - Nitter
     try:
@@ -63,7 +63,7 @@ def get_all_popular():
         for tag in tags:
             if tag not in [t['keyword'] for t in trends] and len(tag)>1:
                 trends.append({"rank":0,"keyword":f"#{tag}","change":f"+{random.uniform(10,50):.0f}%","badge":"LIVE","cat":"밈·이슈","source":"X","url":f"/?s={tag}"})
-    except: pass
+    except Exception as e: pass
 
     # E. 기존 KRX 금융도 3개는 유지 (블로그 금융글 키워드로 쓸 수 있게)
     try:
@@ -74,7 +74,7 @@ def get_all_popular():
                 nv=float(d.get('nv',0)); sv=float(d.get('sv',nv))
                 ch=((nv-sv)/sv*100) if sv else 0
                 trends.append({"rank":0,"keyword":nm,"change":f"{ch:+.2f}%","badge":"LIVE","cat":"경제·금융","source":"KRX","url":f"/?s={nm}"})
-    except: pass
+    except Exception as e: pass
 
     # 15개 채우기
     fallback=["챗GPT","아이폰 16","로또 당첨번호","날씨","비트코인","삼성전자","올림픽","유튜브","넷플릭스 신작","공모주","ISA 계좌","예금 금리","금값","달러 환율","KBO"]
@@ -94,4 +94,4 @@ def get_all_popular():
     return final[:15]
 
 if __name__ == "__main__":
-    print(json.dumps(get_all_popular(), ensure_ascii=False, indent=2))
+    print(json.dumps({"source":"moneybull-realtime-trends","updated_at":datetime.now().isoformat(),"count":len(get_all_popular()),"trends":get_all_popular()}, ensure_ascii=False, indent=2))
