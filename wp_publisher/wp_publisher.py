@@ -184,6 +184,157 @@ def _blocks_to_html(blocks: List[Dict[str, Any]]) -> str:
 
 
 # ──────────────────────────────────────────────
+# GUTENBERG + IMAGE UPLOAD
+# ──────────────────────────────────────────────
+
+def _upload_media(file_path: Optional[str], alt: str = "", focus_keyword: str = "") -> Optional[str]:
+    if not file_path:
+        return None
+    path = Path(file_path)
+    if not path.exists():
+        return None
+    mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+    headers = {
+        "Authorization": f"Basic {base64.b64encode(f'{WP_USER}:{WP_APP_PASSWORD}'.encode('utf-8')).decode('utf-8')}",
+    }
+    with path.open("rb") as f:
+        files = {"file": (path.name, f, mime)}
+        data = {}
+        if alt:
+            data["alt_text"] = alt
+        r = requests.post(
+            _api_path("media"),
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=30,
+        )
+    if r.status_code in (200, 201):
+        url = r.json().get("source_url") or r.json().get("guid", {}).get("rendered")
+        return url
+    print(f"⚠️ 이미지 업로드 실패: {r.status_code} {r.text[:200]}")
+    return None
+
+
+def markdown_to_gutenberg(md: str, uploaded_images: Dict[str, str], focus_keyword: str = "") -> str:
+    lines = md.split("\n")
+    out: List[str] = []
+    in_list = False
+    in_table = False
+    table_rows: List[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if in_table:
+            if stripped.startswith("|"):
+                table_rows.append(stripped)
+                continue
+            else:
+                out.append(_table_to_html(table_rows))
+                table_rows = []
+                in_table = False
+        if stripped.startswith("|"):
+            table_rows.append(stripped)
+            in_table = True
+            continue
+        if stripped.startswith("## "):
+            if in_list:
+                out.append("</ul>")
+                in_list = False
+            out.append(f"<!-- wp:heading --><h2>{stripped[3:]}</h2><!-- /wp:heading -->")
+        elif stripped.startswith("- "):
+            item = stripped[2:]
+            if not in_list:
+                out.append("<!-- wp:list --><ul>")
+                in_list = True
+            out.append(f"<li>{item}</li>")
+        elif stripped.startswith("[이미지:"):
+            if in_list:
+                out.append("</ul>")
+                in_list = False
+            src = _extract_image_src(stripped)
+            alt = _extract_image_alt(stripped) or focus_keyword or "MoneyBull 이미지"
+            url = uploaded_images.get(src, "")
+            if not url:
+                url = f"{WP_URL}/wp-content/uploads/2026/08/{src}"
+            out.append(f'<!-- wp:image --><figure class="wp-block-image"><img src="{url}" alt="{alt}" /></figure><!-- /wp:image -->')
+        elif "핵심:" in stripped or "핵심만" in stripped:
+            if in_list:
+                out.append("</ul>")
+                in_list = False
+            text = stripped
+            if text.startswith("<blockquote>") and text.endswith("</blockquote>"):
+                text = text[len("<blockquote>"):-len("</blockquote>")]
+            out.append(f"<!-- wp:quote --><blockquote><p>{text}</p></blockquote><!-- /wp:quote -->")
+        elif stripped.startswith("---"):
+            if in_list:
+                out.append("</ul>")
+                in_list = False
+            out.append("<hr>")
+        elif stripped == "":
+            if in_list:
+                out.append("</ul>")
+                in_list = False
+        else:
+            if in_list:
+                out.append("</ul>")
+                in_list = False
+            if stripped:
+                out.append(f"<!-- wp:paragraph --><p>{stripped}</p><!-- /wp:paragraph -->")
+    if in_table:
+        out.append(_table_to_html(table_rows))
+    if in_list:
+        out.append("</ul>")
+    return "\n".join(out)
+
+
+def _table_to_html(rows: List[str]) -> str:
+    if not rows:
+        return ""
+    html_rows = []
+    for idx, row in enumerate(rows):
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        if all("---" in c for c in cells):
+            continue
+        tag = "th" if idx == 0 else "td"
+        inner = "".join(f"<{tag}>{c}</{tag}>" for c in cells)
+        html_rows.append(f"<tr>{inner}</tr>")
+    if not html_rows:
+        return ""
+    thead = ""
+    if html_rows:
+        thead = "<thead>" + html_rows[0] + "</thead>"
+        body_rows = html_rows[1:]
+    else:
+        body_rows = html_rows
+    tbody = "<tbody>" + "".join(body_rows) + "</tbody>" if body_rows else ""
+    return "<!-- wp:table --><table>" + thead + tbody + "</table><!-- /wp:table -->"
+
+
+def _extract_image_src(line: str) -> str:
+    start = line.find(":") + 1
+    end = line.find("/", start)
+    if end == -1:
+        end = line.find("]", start)
+    token = line[start:end].strip()
+    if " " in token:
+        token = token.split(" ")[0]
+    return token
+
+
+def _extract_image_alt(line: str) -> str:
+    marker = "/ ALT:"
+    idx = line.find(marker)
+    if idx == -1:
+        return ""
+    tail = line[idx + len(marker):]
+    end = tail.find("]")
+    if end == -1:
+        end = len(tail)
+    return tail[:end].strip()
+
+
+
+# ──────────────────────────────────────────────
 # CORE
 # ──────────────────────────────────────────────
 
@@ -229,6 +380,7 @@ class WPPublisher:
         featured_media: int = 0,
         content_blocks: Optional[List[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
+        slug: Optional[str] = None,
     ) -> int:
         cat_id = _get_category_id(category or DEFAULT_CATEGORY)
         if cat_id is None:
@@ -255,6 +407,8 @@ class WPPublisher:
             "tags": tag_ids,
             "featured_media": featured_media,
         }
+        if slug:
+            payload["slug"] = slug
         if excerpt:
             payload["excerpt"] = excerpt
         if meta:
@@ -284,7 +438,9 @@ class WPPublisher:
                      content: Optional[str] = None, status: Optional[str] = None,
                      category: Optional[Union[str, int]] = None,
                      tags: Optional[List[Union[str, int]]] = None,
-                     content_blocks: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+                     content_blocks: Optional[List[Dict[str, Any]]] = None,
+                     meta: Optional[Dict[str, Any]] = None,
+                     slug: Optional[str] = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {}
         if title is not None:
             payload["title"] = title
@@ -292,6 +448,8 @@ class WPPublisher:
             payload["content"] = _blocks_to_html(content_blocks) if content_blocks else content
         if status is not None:
             payload["status"] = status
+        if slug:
+            payload["slug"] = slug
         if category is not None:
             cat_id = _get_category_id(category)
             if cat_id:
@@ -302,6 +460,8 @@ class WPPublisher:
             tag_ids = [t for t in tag_ids if t]
             if tag_ids:
                 payload["tags"] = tag_ids
+        if meta:
+            payload["meta"] = meta
 
         r = requests.post(
             _api_path(f"posts/{post_id}"),
@@ -309,13 +469,11 @@ class WPPublisher:
             auth=(self.user, self.password),
             timeout=30,
         )
-
         if r.status_code == 200:
             data = r.json()
             print(f"✅ 수정 완료: ID {post_id} — {data.get('title', {}).get('rendered', '제목 없음')}")
             return data
-        else:
-            raise RuntimeError(f"수정 실패 HTTP {r.status_code}: {r.text[:300]}")
+        raise RuntimeError(f"수정 실패 HTTP {r.status_code}: {r.text[:300]}")
 
     def publish(self, post_id: int) -> Dict[str, Any]:
         return self.update_draft(post_id, status="publish")
