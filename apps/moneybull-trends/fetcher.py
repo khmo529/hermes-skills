@@ -75,14 +75,18 @@ def get_all():
 
     for i,t in enumerate(final):
         t['rank']=i+1
+        t['url']=f"/?s={t['keyword']}"
+        t['google_url']=f"https://www.google.com/search?q={t['keyword']}"
+        t['naver_url']=f"https://search.naver.com/search.naver?query={t['keyword']}"
+        if 'description' not in t: t['description']=t.get('desc', get_desc(t['keyword']))
     return final[:40]
 
 if __name__ == "__main__":
-    trends=get_all()
-    payload={
-        "source":"moneybull-realtime-trends",
-        "updated_at":datetime.now().isoformat(),
-        "count":len(trends),
-        "trends":trends,
+    data=get_all()
+    output={
+        "updated":datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "total":len(data),
+        "overall":data[:15],
+        "all":data,
     }
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    print(json.dumps(output, ensure_ascii=False, indent=2))
