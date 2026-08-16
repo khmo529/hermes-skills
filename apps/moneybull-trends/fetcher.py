@@ -75,6 +75,7 @@ def get_all():
 
     for i,t in enumerate(final):
         t['rank']=i+1
+        t['rank_change']=random.choice(["▲1","▲2","▲3","▼1","▼2","NEW","-"])
         t['url']=f"/?s={t['keyword']}"
         t['google_url']=f"https://www.google.com/search?q={t['keyword']}"
         t['naver_url']=f"https://search.naver.com/search.naver?query={t['keyword']}"
